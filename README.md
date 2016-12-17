@@ -11,6 +11,7 @@ It's also incredibly easy to create themes for this blog system, and adding thin
 * MySQL Connector (https://dev.mysql.com/downloads/connector/cpp/)
 
 # Binaries
+- Requires <a href="https://www.microsoft.com/en-ca/download/details.aspx?id=48145">Visual C++ Redist. 2015</a><br>
 Usage: `LightBlog.exe DB_HOST DB_USER DB_PASS DB_NAME`
 
 # Database
