@@ -1,0 +1,46 @@
+<html>
+		<head>
+			<title>Home - LightBlog</title>
+			<link href="css/style.css" rel="stylesheet" media="screen">
+		</head>
+		<body>
+			<div class="header">
+				<a href="../" >
+					<img class="logo" src="img/logo.png"/>
+				</a>	
+			</div>
+	
+			<div class="content" id="content">
+
+				<!-- Start Posts -->
+				<script>
+					var xhr; 
+					if (window.XMLHttpRequest) 
+						xhr = new XMLHttpRequest(); 
+					else if (window.ActiveXObject) 
+						xhr = new ActiveXObject("Msxml2.XMLHTTP");
+					else 
+						throw new Error("Ajax is not supported by your browser");
+					
+					xhr.onreadystatechange = function () {
+						if (xhr.readyState < 4)
+							document.getElementById('content').innerHTML = "<br><center>Loading...</center>";
+						else if (xhr.readyState === 4) {
+							if (xhr.status == 200 && xhr.status < 300)
+							{
+								xmlDoc = xhr.responseXML; 
+								document.getElementById('content').innerHTML = xhr.response;
+							} 
+						}
+					}
+					xhr.open('GET', 'api/home');
+					xhr.send(null);
+				</script>
+				<!-- End Posts -->
+				<br>
+			</div>
+			<div class="footer">
+				<div class="footerContent"><p></p></div>
+			</div>
+		</body>
+	</html>
