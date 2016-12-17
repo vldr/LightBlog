@@ -10,7 +10,10 @@
 #include <cppconn/resultset.h>
 #include <cppconn/statement.h>
 #include <cppconn/prepared_statement.h>
+
 #include <boost/functional/hash.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
 
 #include <vector>
 #include "sha256.hpp"
@@ -33,6 +36,15 @@ public:
 
 	void sendPage(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response, std::string ss);
 	void sendPage404(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response, std::string ss);
+
+	void processPostGET(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
+	void processPostPOST(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
+
+	void processEditGET(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
+	void processEditPOST(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
+
+	void processDeleteGET(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
+	void processDeletePOST(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
 
 	std::stringstream getInfo(std::string input);
 	std::stringstream getPosts();
@@ -63,6 +75,24 @@ public:
 			}
 		}
 		data.swap(buffer);
+	}
+
+	string UriDecode(string &SRC) {
+		string ret;
+		char ch;
+		int i, ii;
+		for (i = 0; i<SRC.length(); i++) {
+			if (int(SRC[i]) == 37) {
+				sscanf(SRC.substr(i + 1, 2).c_str(), "%x", &ii);
+				ch = static_cast<char>(ii);
+				ret += ch;
+				i = i + 2;
+			}
+			else {
+				ret += SRC[i];
+			}
+		}
+		return (ret);
 	}
 protected:
 	std::string user_g;

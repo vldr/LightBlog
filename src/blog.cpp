@@ -47,6 +47,360 @@ void BlogSystem::sendPage404(shared_ptr<HttpServer::Request> request, shared_ptr
 	*response << "HTTP/1.1 404 Not found\r\nContent-Length: " << ss.length() << "\r\n\r\n" << ss;
 }
 
+void BlogSystem::processPostGET(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response)
+{
+	std::stringstream jj;
+
+	jj << R"V0G0N(
+			<html>
+				<head>
+					<script src="https://cdn.rawgit.com/Caligatio/jsSHA/master/src/sha256.js"></script>
+				</head>
+				<center>
+				<form action="post" method="post">
+					Username:<br>
+					<input type="text" id="username" name="username" placeholder=""><br>
+					Password:<br>
+					<input type="password" id="password" name="password" placeholder=""><br>
+					<hr>
+					Title:<br>
+					<input type="text" name="title"><br>
+					Content:<br>
+					<textarea rows="4" name="content" cols="50"></textarea><br><br>
+					<input type="submit" value="Post">
+				</form>
+
+				<script>
+				function getCookie(name) {
+					var value = "; " + document.cookie;
+					var parts = value.split("; " + name + "=");
+					if (parts.length == 2) return parts.pop().split(";").shift();
+					else return "";
+				}
+
+				document.getElementById("username").value = getCookie("user");
+				document.getElementById("password").value = getCookie("pass");
+
+				</script>
+			</html>
+			)V0G0N";
+
+	sendPage(request, response, jj.str());
+}
+
+void BlogSystem::processPostPOST(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response)
+{
+	stringstream content;
+
+	std::vector<std::string> words;
+	std::string s = request->content.string();
+	boost::split(words, s, boost::is_any_of("&"), boost::token_compress_on);
+
+	std::string title;
+	std::string con;
+	std::string username;
+	std::string password;
+
+	for (string& query : words) {
+		string key;
+		string value;
+
+		int positionOfEquals = query.find("=");
+		key = query.substr(0, positionOfEquals);
+		if (positionOfEquals != string::npos)
+			value = query.substr(positionOfEquals + 1);
+
+		if (key == "username") {
+			std::replace(value.begin(), value.end(), '+', ' ');
+			value = UriDecode(value);
+
+			username = value;
+		}
+
+		if (key == "password") {
+			std::replace(value.begin(), value.end(), '+', ' ');
+			value = UriDecode(value);
+
+			password = value;
+		}
+
+		if (key == "content") {
+			std::replace(value.begin(), value.end(), '+', ' ');
+			value = UriDecode(value);
+
+			encode(value);
+			con = value;
+		}
+
+		if (key == "title") {
+			std::replace(value.begin(), value.end(), '+', ' ');
+			value = UriDecode(value);
+
+			encode(value);
+			title = value;
+		}
+	}
+
+	if (processLogin(username, password) == 1) {
+		createPost(title, con, username);
+
+		content << "<html><head><meta http-equiv=\"refresh\" content=\"0; url=../\" /></head>OK posted...</html>";
+
+		cout << ">> " << request->remote_endpoint_address << ":" <<
+			request->remote_endpoint_port << " has requested (" << request->path << ")...\n";
+
+		if (password.length() != 64)
+			password = sha256(password);
+
+		*response << "HTTP/1.1 200 OK\r\nSet-Cookie: user=" << username << ";\r\nSet-Cookie: pass=" << password
+			<< ";\r\nContent-Length: " << content.str().length() << "\r\n\r\n" << content.str().c_str();
+	}
+	else {
+		sendPage(request, response, "unable to login... go back to edit information");
+	}
+}
+
+void BlogSystem::processEditGET(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response)
+{
+	std::stringstream jj;
+	int reply;
+
+	jj << R"V0G0N(
+	<html>
+		<head>
+			<script src="https://cdn.rawgit.com/Caligatio/jsSHA/master/src/sha256.js"></script>
+		</head>
+		<center>
+		<form action="../edit" method="post">
+			Username:<br>
+			<input type="text" id="username" name="username" placeholder=""><br>
+			Password:<br>
+			<input type="password" id="password" name="password" placeholder=""><br>
+					
+			<input type="hidden" name="post_id" value=")V0G0N" << getPostInformationById(reply, request->path_match[1], "id").str() << R"V0G0N(" />
+			<hr>
+			Title:<br>
+			<input type="text" name="title" value=")V0G0N" << getPostInformationById(reply, request->path_match[1], "title").str() << R"V0G0N("><br>
+			Content:<br>
+			<textarea rows="20" name="content" cols="100">)V0G0N" << getPostInformationById(reply, request->path_match[1], "content").str() << R"V0G0N(</textarea><br><br>
+			<input type="submit" value="Update">
+		</form>
+
+		<script>
+		function getCookie(name) {
+			var value = "; " + document.cookie;
+			var parts = value.split("; " + name + "=");
+			if (parts.length == 2) return parts.pop().split(";").shift();
+			else return "";
+		}
+
+		document.getElementById("username").value = getCookie("user");
+		document.getElementById("password").value = getCookie("pass");
+
+		</script>
+	</html>
+	)V0G0N";
+
+	if (reply != 1) {
+		sendPage(request, response, "Post was not found...");
+		return;
+	}
+
+	sendPage(request, response, jj.str());
+}
+
+void BlogSystem::processEditPOST(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response)
+{
+	stringstream content;
+
+	std::vector<std::string> words;
+	std::string s = request->content.string();
+	boost::split(words, s, boost::is_any_of("&"), boost::token_compress_on);
+
+	std::string title;
+	std::string con;
+	std::string username;
+	std::string post_id;
+	std::string password;
+
+	for (string& query : words) {
+		string key;
+		string value;
+
+		int positionOfEquals = query.find("=");
+		key = query.substr(0, positionOfEquals);
+		if (positionOfEquals != string::npos)
+			value = query.substr(positionOfEquals + 1);
+
+		if (key == "post_id") {
+			std::replace(value.begin(), value.end(), '+', ' ');
+			value = UriDecode(value);
+
+			post_id = value;
+		}
+
+		if (key == "username") {
+			std::replace(value.begin(), value.end(), '+', ' ');
+			value = UriDecode(value);
+
+			username = value;
+		}
+
+		if (key == "password") {
+			std::replace(value.begin(), value.end(), '+', ' ');
+			value = UriDecode(value);
+
+			password = value;
+		}
+
+		if (key == "content") {
+			std::replace(value.begin(), value.end(), '+', ' ');
+			value = UriDecode(value);
+
+			encode(value);
+			con = value;
+		}
+
+		if (key == "title") {
+			std::replace(value.begin(), value.end(), '+', ' ');
+			value = UriDecode(value);
+
+			encode(value);
+			title = value;
+		}
+	}
+
+	if (processLogin(username, password) == 1) {
+		updatePost(post_id, title, con, username);
+
+		content << "<html><head><meta http-equiv=\"refresh\" content=\"0; url=../view/" << post_id << "\" /></head>OK posted...</html>";
+
+		cout << ">> " << request->remote_endpoint_address << ":" <<
+			request->remote_endpoint_port << " has requested (" << request->path << ")...\n";
+
+		if (password.length() != 64)
+			password = sha256(password);
+
+		*response << "HTTP/1.1 200 OK\r\nSet-Cookie: user=" << username << ";\r\nSet-Cookie: pass=" << password
+			<< ";\r\nContent-Length: " << content.str().length() << "\r\n\r\n" << content.str().c_str();
+	}
+	else {
+		sendPage(request, response, "unable to login... go back to edit information");
+	}
+}
+
+void BlogSystem::processDeleteGET(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response)
+{
+	std::stringstream jj;
+	int reply;
+
+	jj << R"V0G0N(
+	<html>
+		<head>
+			<script src="https://cdn.rawgit.com/Caligatio/jsSHA/master/src/sha256.js"></script>
+		</head>
+		<center>
+		<form action="../delete" method="post">
+			Username:<br>
+			<input type="text" id="username" name="username" placeholder=""><br>
+			Password:<br>
+			<input type="password" id="password" name="password" placeholder=""><br>
+					
+			<input type="hidden" name="post_id" value=")V0G0N" << getPostInformationById(reply, request->path_match[1], "id").str() << R"V0G0N(" />
+			<hr>
+
+			<b><h1>You are about to delete post ")V0G0N" << getPostInformationById(reply, request->path_match[1], "title").str() << R"V0G0N("<br> 
+			Are you sure?</h1></b><br>
+			<input type="submit" value="Delete">
+		</form>
+
+		<script>
+		function getCookie(name) {
+			var value = "; " + document.cookie;
+			var parts = value.split("; " + name + "=");
+			if (parts.length == 2) return parts.pop().split(";").shift();
+			else return "";
+		}
+
+		document.getElementById("username").value = getCookie("user");
+		document.getElementById("password").value = getCookie("pass");
+
+		</script>
+	</html>
+	)V0G0N";
+
+	if (reply != 1) {
+		sendPage(request, response, "Post was not found...");
+		return;
+	}
+
+	sendPage(request, response, jj.str());
+}
+
+void BlogSystem::processDeletePOST(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response)
+{
+	stringstream content;
+
+	std::vector<std::string> words;
+	std::string s = request->content.string();
+	boost::split(words, s, boost::is_any_of("&"), boost::token_compress_on);
+
+	std::string title;
+	std::string con;
+	std::string username;
+	std::string post_id;
+	std::string password;
+
+	for (string& query : words) {
+		string key;
+		string value;
+
+		int positionOfEquals = query.find("=");
+		key = query.substr(0, positionOfEquals);
+		if (positionOfEquals != string::npos)
+			value = query.substr(positionOfEquals + 1);
+
+		if (key == "post_id") {
+			std::replace(value.begin(), value.end(), '+', ' ');
+			value = UriDecode(value);
+
+			post_id = value;
+		}
+
+		if (key == "username") {
+			std::replace(value.begin(), value.end(), '+', ' ');
+			value = UriDecode(value);
+
+			username = value;
+		}
+
+		if (key == "password") {
+			std::replace(value.begin(), value.end(), '+', ' ');
+			value = UriDecode(value);
+
+			password = value;
+		}
+	}
+
+	if (processLogin(username, password) == 1) {
+		deletePost(post_id);
+
+		content << "<html><head><meta http-equiv=\"refresh\" content=\"0; url=../\" /></head>OK posted...</html>";
+
+		cout << ">> " << request->remote_endpoint_address << ":" <<
+			request->remote_endpoint_port << " has requested (" << request->path << ")...\n";
+
+		if (password.length() != 64)
+			password = sha256(password);
+
+		*response << "HTTP/1.1 200 OK\r\nSet-Cookie: user=" << username << ";\r\nSet-Cookie: pass=" << password
+			<< ";\r\nContent-Length: " << content.str().length() << "\r\n\r\n" << content.str().c_str();
+	}
+	else {
+		sendPage(request, response, "unable to login... go back to edit information");
+	}
+}
+
 std::stringstream BlogSystem::getInfo(std::string input)
 {
 	std::stringstream ss;
@@ -581,7 +935,9 @@ int BlogSystem::processLogin(std::string user_input, std::string pwd_input)
 		pstmt.reset(con->prepareStatement("SELECT * FROM users WHERE username=? AND pass=?"));
 		pstmt->setString(1, user_input);
 
-		pwd_input = sha256(pwd_input);
+		if (pwd_input.length() != 64)
+			pwd_input = sha256(pwd_input);
+
 		pstmt->setString(2, pwd_input);
 
 		res.reset(pstmt->executeQuery());

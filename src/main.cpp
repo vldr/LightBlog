@@ -1,5 +1,4 @@
 #include "blog.hpp"
-#include "uri.hpp"
 
 #define BOOST_SPIRIT_THREADSAFE
 #include <boost/property_tree/ptree.hpp>
@@ -25,7 +24,7 @@ std::string DB_USER = "root";
 std::string DB_PASS = "";
 std::string DB_DB = "lolyou";
 
-using namespace std; 
+using namespace std;
 using namespace boost::property_tree;
 
 void default_resource_send(const HttpServer &server, const shared_ptr<HttpServer::Response> &response,
@@ -75,94 +74,14 @@ int main(int argc, char* argv[]) {
 		shared_ptr<HttpServer::Request> request) {
 
 		thread work_thread([response, request, &blog] {
-			std::stringstream jj;
-
-			jj << R"V0G0N(
-					<html>
-						<center>
-						<form action="post" method="post">
-							Username:<br>
-							<input type="text" name="username" placeholder=""><br>
-							Password:<br>
-							<input type="password" name="password" placeholder=""><br>
-							<hr>
-							Title:<br>
-							<input type="text" name="title"><br>
-							Content:<br>
-							<textarea rows="4" name="content" cols="50"></textarea><br><br>
-							<input type="submit" value="Post">
-						</form>
-					</html>
-					)V0G0N";
-
-			blog.sendPage(request, response, jj.str());
+			blog.processPostGET(request, response);
 		});
 		work_thread.detach();
 	};
 
 	server.resource["^/post$"]["POST"] = [&blog](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		thread work_thread([response, request, &blog] {
-			stringstream content;
-
-			std::vector<std::string> words;
-			std::string s = request->content.string();
-			boost::split(words, s, boost::is_any_of("&"), boost::token_compress_on);
-
-			std::string title;
-			std::string con;
-			std::string username;
-			std::string password;
-
-			for (string& query : words) {
-				string key;
-				string value;
-
-				int positionOfEquals = query.find("=");
-				key = query.substr(0, positionOfEquals);
-				if (positionOfEquals != string::npos)
-					value = query.substr(positionOfEquals + 1);
-
-				if (key == "username") {
-					std::replace(value.begin(), value.end(), '+', ' ');
-					value = UriDecode(value);
-
-					username = value;
-				}
-
-				if (key == "password") {
-					std::replace(value.begin(), value.end(), '+', ' ');
-					value = UriDecode(value);
-
-					password = value;
-				}
-
-				if (key == "content") {
-					std::replace(value.begin(), value.end(), '+', ' ');
-					value = UriDecode(value);
-					
-					blog.encode(value);
-					con = value;
-				}
-
-				if (key == "title") {
-					std::replace(value.begin(), value.end(), '+', ' ');
-					value = UriDecode(value);
-
-					blog.encode(value);
-					title = value;
-				}
-			}
-
-			if (blog.processLogin(username, password) == 1) {
-				blog.createPost(title, con, username);
-
-				content << "<html><head><meta http-equiv=\"refresh\" content=\"0; url=../\" /></head>OK posted...</html>";
-
-				blog.sendPage(request, response, content.str());
-			}
-			else {
-				blog.sendPage(request, response, "unable to login... go back to edit information");
-			}
+			blog.processPostPOST(request, response);
 		});
 		work_thread.detach();
 	};
@@ -171,110 +90,14 @@ int main(int argc, char* argv[]) {
 		shared_ptr<HttpServer::Request> request) {
 
 		thread work_thread([response, request, &blog] {
-			std::stringstream jj;
-			int reply;
-
-			jj << R"V0G0N(
-					<html>
-						<center>
-						<form action="../edit" method="post">
-							Username:<br>
-							<input type="text" name="username" placeholder=""><br>
-							Password:<br>
-							<input type="password" name="password" placeholder=""><br>
-
-							<input type="hidden" name="post_id" value=")V0G0N" << blog.getPostInformationById(reply, request->path_match[1], "id").str() << R"V0G0N(" />
-							<hr>
-							Title:<br>
-							<input type="text" name="title" value=")V0G0N" << blog.getPostInformationById(reply, request->path_match[1], "title").str() << R"V0G0N("><br>
-							Content:<br>
-							<textarea rows="20" name="content" cols="100">)V0G0N" << blog.getPostInformationById(reply, request->path_match[1], "content").str() << R"V0G0N(</textarea><br><br>
-							<input type="submit" value="Update">
-						</form>
-					</html>
-					)V0G0N";
-
-			if (reply != 1) {
-				blog.sendPage(request, response, "Post was not found...");
-				return;
-			}
-
-			blog.sendPage(request, response, jj.str());
+			blog.processEditGET(request, response);
 		});
 		work_thread.detach();
 	};
 
 	server.resource["^/edit$"]["POST"] = [&blog](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		thread work_thread([response, request, &blog] {
-			stringstream content;
-
-			std::vector<std::string> words;
-			std::string s = request->content.string();
-			boost::split(words, s, boost::is_any_of("&"), boost::token_compress_on);
-
-			std::string title;
-			std::string con;
-			std::string username;
-			std::string post_id;
-			std::string password;
-
-			for (string& query : words) {
-				string key;
-				string value;
-
-				int positionOfEquals = query.find("=");
-				key = query.substr(0, positionOfEquals);
-				if (positionOfEquals != string::npos)
-					value = query.substr(positionOfEquals + 1);
-
-				if (key == "post_id") {
-					std::replace(value.begin(), value.end(), '+', ' ');
-					value = UriDecode(value);
-
-					post_id = value;
-				}
-
-				if (key == "username") {
-					std::replace(value.begin(), value.end(), '+', ' ');
-					value = UriDecode(value);
-
-					username = value;
-				}
-
-				if (key == "password") {
-					std::replace(value.begin(), value.end(), '+', ' ');
-					value = UriDecode(value);
-
-					password = value;
-				}
-
-				if (key == "content") {
-					std::replace(value.begin(), value.end(), '+', ' ');
-					value = UriDecode(value);
-
-					blog.encode(value);
-					con = value;
-				}
-
-				if (key == "title") {
-					std::replace(value.begin(), value.end(), '+', ' ');
-					value = UriDecode(value);
-
-					blog.encode(value);
-					title = value;
-				}
-			}
-
-			if (blog.processLogin(username, password) == 1) {
-				blog.updatePost(post_id, title, con, username);
-
-				content << "<html><head><meta http-equiv=\"refresh\" content=\"0; url=../view/" << post_id << "\" /></head>OK posted...</html>";
-
-				blog.sendPage(request, response, content.str());
-			}
-			else {
-				blog.sendPage(request, response, "unable to login... go back to edit information");
-			}
+			blog.processEditPOST(request, response);
 		});
 		work_thread.detach();
 	};
@@ -283,94 +106,14 @@ int main(int argc, char* argv[]) {
 		shared_ptr<HttpServer::Request> request) {
 
 		thread work_thread([response, request, &blog] {
-			std::stringstream jj;
-			int reply = 0;
-
-			jj << R"V0G0N(
-					<html>
-						<center>
-						<form action="../delete" method="post">
-							Username:<br>
-							<input type="text" name="username" placeholder=""><br>
-							Password:<br>
-							<input type="password" name="password" placeholder=""><br>
-
-							<input type="hidden" name="post_id" value=")V0G0N" << blog.getPostInformationById(reply, request->path_match[1], "id").str() << R"V0G0N(" />
-
-							<hr>
-
-							<b><h1>You are about to delete post ")V0G0N" << blog.getPostInformationById(reply, request->path_match[1], "title").str() << R"V0G0N("<br> 
-							Are you sure?</h1></b><br>
-							<input type="submit" value="Delete">
-						</form>
-					</html>
-					)V0G0N";
-
-			if (reply != 1) {
-				blog.sendPage(request, response, "Post was not found...");
-				return;
-			}
-
-			blog.sendPage(request, response, jj.str());
+			blog.processDeleteGET(request, response);
 		});
 		work_thread.detach();
 	};
 
 	server.resource["^/delete$"]["POST"] = [&blog](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		thread work_thread([response, request, &blog] {
-			stringstream content;
-
-			std::vector<std::string> words;
-			std::string s = request->content.string();
-			boost::split(words, s, boost::is_any_of("&"), boost::token_compress_on);
-
-			std::string title;
-			std::string con;
-			std::string username;
-			std::string post_id;
-			std::string password;
-
-			for (string& query : words) {
-				string key;
-				string value;
-
-				int positionOfEquals = query.find("=");
-				key = query.substr(0, positionOfEquals);
-				if (positionOfEquals != string::npos)
-					value = query.substr(positionOfEquals + 1);
-
-				if (key == "post_id") {
-					std::replace(value.begin(), value.end(), '+', ' ');
-					value = UriDecode(value);
-
-					post_id = value;
-				}
-
-				if (key == "username") {
-					std::replace(value.begin(), value.end(), '+', ' ');
-					value = UriDecode(value);
-
-					username = value;
-				}
-
-				if (key == "password") {
-					std::replace(value.begin(), value.end(), '+', ' ');
-					value = UriDecode(value);
-
-					password = value;
-				}
-			}
-
-			if (blog.processLogin(username, password) == 1) {
-				blog.deletePost(post_id);
-
-				content << "<html><head><meta http-equiv=\"refresh\" content=\"0; url=../\" /></head>OK posted...</html>";
-
-				blog.sendPage(request, response, content.str());
-			}
-			else {
-				blog.sendPage(request, response, "unable to login... go back to edit information");
-			}
+			blog.processDeletePOST(request, response);
 		});
 		work_thread.detach();
 	};
