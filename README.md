@@ -4,6 +4,7 @@
 Robust, Fast, MySQL bbcode http blog system written in C++ (tested on MSVC2015). The project is based off of (https://github.com/vldr/LightBlog) and (https://github.com/eidheim/Simple-Web-Server).
 
 It's also incredibly easy to create themes for this blog system, and adding things to it isn't too hard.
+I haven't tested with GCC or any other compiler other than MSVC2015 but it should work since the whole project isn't dependent on any windows headers.
 
 # Dependencies
 * Boost C++ libraries
