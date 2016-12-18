@@ -23,6 +23,6 @@ Default username and password is:
 `vlad` and `test`
 
 # Demo 
-http://vldr.org:8080/
+http://blog.vldr.org/
 
 
