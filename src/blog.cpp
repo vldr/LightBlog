@@ -33,7 +33,18 @@ BlogSystem::BlogSystem(std::string user, std::string pwd, std::string db, std::s
 
 void BlogSystem::sendPage(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response, std::string ss)
 {
-	cout << ">> " << request->remote_endpoint_address << ":" <<
+	std::string iisIP = "";
+	for (auto& header : request->header) {
+		if (header.first == "X-Forwarded-For") {
+			iisIP = header.second;
+		}
+	}
+
+	if (iisIP != "")
+		cout << ">> " << iisIP << ":" <<
+		request->remote_endpoint_port << " has requested (" << request->path << ")...\n";
+	else
+		cout << ">> " << request->remote_endpoint_address << ":" <<
 		request->remote_endpoint_port << " has requested (" << request->path << ")...\n";
 
 	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << ss.length() << "\r\n\r\n" << ss.c_str();
@@ -41,7 +52,18 @@ void BlogSystem::sendPage(shared_ptr<HttpServer::Request> request, shared_ptr<Ht
 
 void BlogSystem::sendPage404(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response, string ss)
 {
-	cout << ">> " << request->remote_endpoint_address << ":" <<
+	std::string iisIP = "";
+	for (auto& header : request->header) {
+		if (header.first == "X-Forwarded-For") {
+			iisIP = header.second;
+		} 
+	}
+
+	if (iisIP != "")
+		cout << ">> " << iisIP << ":" <<
+		request->remote_endpoint_port << " has requested (" << request->path << ")...\n";
+	else
+		cout << ">> " << request->remote_endpoint_address << ":" <<
 		request->remote_endpoint_port << " has requested (" << request->path << ")...\n";
 
 	*response << "HTTP/1.1 404 Not found\r\nContent-Length: " << ss.length() << "\r\n\r\n" << ss;
@@ -55,8 +77,45 @@ void BlogSystem::processPostGET(shared_ptr<HttpServer::Request> request, shared_
 			<html>
 				<head>
 					<script src="https://cdn.rawgit.com/Caligatio/jsSHA/master/src/sha256.js"></script>
+
+					<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+					<link rel="stylesheet" href="../sceditor/minified/themes/default.min.css" />
+					<script src="../sceditor/minified/jquery.sceditor.bbcode.min.js"></script>
+
+					<style>
+						body {
+							font-family: 'Open Sans',sans-serif;
+						}
+	
+						.topbar {
+							position: absolute !important;
+		
+							right: 0px !important;
+							top:21px !important;
+		
+							width: auto !important;
+							font-size:18px !important;
+							padding-right:40px !important;
+						}
+						.topbar-li {
+							display: inline !important;
+							margin-left:14.5px !important;;
+						}
+						.topbar-li a {
+							color:black !important;
+							text-decoration:underline !important;
+							font-family: 'Open Sans', sans-serif;
+						}
+					</style>
 				</head>
 				<center>
+				
+				<div class="topbar">
+					<ul class="topbar-ul">
+						<li class="topbar-li"><a href="../">Return home...</a></li>
+					</ul>
+				</div>
+
 				<form action="post" method="post">
 					Username:<br>
 					<input type="text" id="username" name="username" placeholder=""><br>
@@ -81,6 +140,13 @@ void BlogSystem::processPostGET(shared_ptr<HttpServer::Request> request, shared_
 				document.getElementById("username").value = getCookie("user");
 				document.getElementById("password").value = getCookie("pass");
 
+				$(function() {
+					// Replace all textarea tags with SCEditor
+					$('textarea').sceditor({
+						plugins: 'bbcode',
+						style: 'minified/jquery.sceditor.default.min.css'
+					});
+				});
 				</script>
 			</html>
 			)V0G0N";
@@ -169,8 +235,45 @@ void BlogSystem::processEditGET(shared_ptr<HttpServer::Request> request, shared_
 	<html>
 		<head>
 			<script src="https://cdn.rawgit.com/Caligatio/jsSHA/master/src/sha256.js"></script>
+
+			<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+			<link rel="stylesheet" href="../sceditor/minified/themes/default.min.css" />
+			<script src="../sceditor/minified/jquery.sceditor.bbcode.min.js"></script>
+
+			<style>
+				body {
+					font-family: 'Open Sans',sans-serif;
+				}
+	
+				.topbar {
+					position: absolute !important;
+		
+					right: 0px !important;
+					top:21px !important;
+		
+					width: auto !important;
+					font-size:18px !important;
+					padding-right:40px !important;
+				}
+				.topbar-li {
+					display: inline !important;
+					margin-left:14.5px !important;;
+				}
+				.topbar-li a {
+					color:black !important;
+					text-decoration:underline !important;
+					font-family: 'Open Sans', sans-serif;
+				}
+			</style>
 		</head>
 		<center>
+
+		<div class="topbar">
+			<ul class="topbar-ul">
+				<li class="topbar-li"><a href="../">Return home...</a></li>
+			</ul>
+		</div>
+
 		<form action="../edit" method="post">
 			Username:<br>
 			<input type="text" id="username" name="username" placeholder=""><br>
@@ -187,16 +290,23 @@ void BlogSystem::processEditGET(shared_ptr<HttpServer::Request> request, shared_
 		</form>
 
 		<script>
-		function getCookie(name) {
-			var value = "; " + document.cookie;
-			var parts = value.split("; " + name + "=");
-			if (parts.length == 2) return parts.pop().split(";").shift();
-			else return "";
-		}
+			function getCookie(name) {
+				var value = "; " + document.cookie;
+				var parts = value.split("; " + name + "=");
+				if (parts.length == 2) return parts.pop().split(";").shift();
+				else return "";
+			}
 
-		document.getElementById("username").value = getCookie("user");
-		document.getElementById("password").value = getCookie("pass");
+			document.getElementById("username").value = getCookie("user");
+			document.getElementById("password").value = getCookie("pass");
 
+			$(function() {
+				// Replace all textarea tags with SCEditor
+				$('textarea').sceditor({
+					plugins: 'bbcode',
+					style: 'minified/jquery.sceditor.default.min.css'
+				});
+			});
 		</script>
 	</html>
 	)V0G0N";
@@ -298,8 +408,40 @@ void BlogSystem::processDeleteGET(shared_ptr<HttpServer::Request> request, share
 	<html>
 		<head>
 			<script src="https://cdn.rawgit.com/Caligatio/jsSHA/master/src/sha256.js"></script>
+			<style>
+				body {
+					font-family: 'Open Sans',sans-serif;
+				}
+	
+				.topbar {
+					position: absolute !important;
+		
+					right: 0px !important;
+					top:21px !important;
+		
+					width: auto !important;
+					font-size:18px !important;
+					padding-right:40px !important;
+				}
+				.topbar-li {
+					display: inline !important;
+					margin-left:14.5px !important;;
+				}
+				.topbar-li a {
+					color:black !important;
+					text-decoration:underline !important;
+					font-family: 'Open Sans', sans-serif;
+				}
+			</style>
 		</head>
 		<center>
+
+		<div class="topbar">
+			<ul class="topbar-ul">
+				<li class="topbar-li"><a href="../">Return home...</a></li>
+			</ul>
+		</div>
+
 		<form action="../delete" method="post">
 			Username:<br>
 			<input type="text" id="username" name="username" placeholder=""><br>
@@ -534,7 +676,7 @@ std::stringstream BlogSystem::getPosts()
 						</div>
 						<div class="postContent"><p style="white-space:pre-wrap;">)V0G0N" << bbCodeParsed << R"V0G0N(</p></div>
 						<div class="postFooter">
-							<a href="post"><img class="editPostButton" src="http://www.famfamfam.com/lab/icons/silk/icons/application_add.png" /></a>
+							<!--<a href="post"><img class="editPostButton" src="http://www.famfamfam.com/lab/icons/silk/icons/application_add.png" /></a>-->
 							<span class="postAuthor">)V0G0N" << res->getString("author") << R"V0G0N(</span>
 						</div>
 					</div>
@@ -689,8 +831,8 @@ std::stringstream BlogSystem::getThisPost(std::string post_id)
 						</div>
 						<div class="postContent"><p style="white-space:pre-wrap;">)V0G0N" << bbCodeParsed << R"V0G0N(</p></div>
 						<div class="postFooter">
-							<a href="../edit/)V0G0N" << res->getString("id") << R"V0G0N("><img class="editPostButton" src="http://www.famfamfam.com/lab/icons/silk/icons/application_edit.png" /></a>
-							<a href="../delete/)V0G0N" << res->getString("id") << R"V0G0N("><img class="editPostButton" src="http://www.famfamfam.com/lab/icons/silk/icons/application_delete.png" /></a>
+							<!--<a href="../edit/)V0G0N" << res->getString("id") << R"V0G0N("><img class="editPostButton" src="http://www.famfamfam.com/lab/icons/silk/icons/application_edit.png" /></a>
+							<a href="../delete/)V0G0N" << res->getString("id") << R"V0G0N("><img class="editPostButton" src="http://www.famfamfam.com/lab/icons/silk/icons/application_delete.png" /></a>-->
 							<span class="postAuthor">)V0G0N" << res->getString("author") << R"V0G0N(</span>
 						</div>
 					</div>

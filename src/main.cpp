@@ -18,6 +18,11 @@
 #include <string>
 #include <sstream>
 #include <stdexcept>
+#include <iostream>
+#include <string>
+#include <stdio.h>
+#include <cstdlib>
+#include <string.h>
 
 std::string DB_HOST = "127.0.0.1";
 std::string DB_USER = "root";
@@ -120,18 +125,18 @@ int main(int argc, char* argv[]) {
 
 	server.resource["^/view/([a-z,A-Z,0-9]+)$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
 		shared_ptr<HttpServer::Request> request) {
-		
+
 		try {
 			auto web_root_path = boost::filesystem::canonical("web");
 			auto path = boost::filesystem::canonical(web_root_path / "view");
 
+			auto cykablyat = make_shared<istringstream>();
 			auto ifs = make_shared<ifstream>();
-			ifs->open(path.string(), ifstream::in | ios::binary);
+			ifs->open(path.string(), ifstream::out | ios::binary);
 
 			if (*ifs) {
 				ifs->seekg(0, ios::end);
 				auto length = ifs->tellg();
-
 				ifs->seekg(0, ios::beg);
 
 				*response << "HTTP/1.1 200 OK\r\nCache-Control:max-age=60\r\nContent-Length: " << length << "\r\n\r\n";
@@ -190,11 +195,10 @@ int main(int argc, char* argv[]) {
 }
 
 void default_resource_send(const HttpServer &server, const shared_ptr<HttpServer::Response> &response, const shared_ptr<ifstream> &ifs) {
-	static vector<char> buffer(131072);
+	vector<char> buffer(131072);
 	streamsize read_length;
 	if ( ( read_length = ifs->read(&buffer[0], buffer.size()).gcount() ) > 0) {
 		response->write(&buffer[0], read_length);
-
 
 		if (read_length == static_cast<streamsize>(buffer.size())) {
 			server.send(response, [&server, response, ifs](const boost::system::error_code &ec) {
