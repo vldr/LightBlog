@@ -126,7 +126,7 @@ namespace bbcode{
  /URL  ! </a>|\
  PRE  ! <pre>|\
  /PRE  ! </pre>|\
-  CODE  ! <code>|\
+  CODE  ! <code style=\"background-color: #d2d2d2;border-radius: 3px;padding: 1px;\">|\
  /CODE  ! </code>|\
   IMG  ! <img src=\"$IMG\" target=\"_blank\" title=\"$TITLE\" style=\"color:white;\"><a style=\"display:none;\">|\
  /IMG  ! </a></img>|\
@@ -134,11 +134,11 @@ namespace bbcode{
  /LIST  ! </ul>|\
  OLIST  ! <ol>|\
  /OLIST  ! </ol>|\
-  *  ! <li>|\
+  *  ! <li style=\margin-top: 10px;margin-bottom: 10px;\">|\
  /*  ! </li>|\
  EMAIL  ! <a href=\"mailto:$EMAIL\" target=\"_blank\">|\
  /EMAIL  ! </a>|\
- HR  ! <hr>|\
+ HR  ! <BR>|\
  QUOTE  ! <div style=\"margin:20px; margin-top:5px;\"><div style=\"margin-bottom:2px\">Quote:</div><table cellpadding=\"3\" cellspacing=\"0\" border=\"0\" width=\"100%\"><tr><td style=\"border:1px inset\"><div><strong>$QUOTE</strong> wrote:</div><div style=\"font-style:italic\">|\
  /QUOTE  ! </div></td></tr></table></div>|";
 	const string _SHEMA_DELIMITER								= "|";

@@ -27,7 +27,7 @@
 std::string DB_HOST = "127.0.0.1";
 std::string DB_USER = "root";
 std::string DB_PASS = "";
-std::string DB_DB = "lolyou";
+std::string DB_DB = "blog";
 
 using namespace std;
 using namespace boost::property_tree;
@@ -38,7 +38,7 @@ void default_resource_send(const HttpServer &server, const shared_ptr<HttpServer
 int main(int argc, char* argv[]) {
 	cout << "[ vldr web app - " << __DATE__ << " ]" << std::endl;
 
-	HttpServer server(8080, 1);
+	HttpServer server(8080, 2);
 	
 	if (argc == 5) {
 		DB_HOST = argv[1];
@@ -58,21 +58,49 @@ int main(int argc, char* argv[]) {
 	server.resource["^/api/view/([a-z,A-Z,0-9]+)$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
 		shared_ptr<HttpServer::Request> request) {
 
-		thread work_thread([response, request, &blog] {
-			stringstream ss = blog.getThisPost(request->path_match[1]);
-			blog.sendPage(request, response, ss.str());
-		});
-		work_thread.detach();
+		if (blog.reload) {
+			if (blog.ss_articles.find(request->path_match[1]) == blog.ss_articles.end()) {
+				cout << "[ Using hdd not found item... ]" << std::endl;
+
+				thread work_thread([response, request, &blog] {
+					stringstream ss = blog.getThisPost(request->path_match[1]);
+					blog.sendPage(request, response, ss.str());
+					blog.reload = true;
+				});
+				work_thread.detach();
+			}
+			else {
+				cout << "[ Using cache... ]" << std::endl;
+
+				blog.sendPage(request, response, blog.ss_articles[request->path_match[1]]);
+			}
+		}
+		else {
+			thread work_thread([response, request, &blog] {
+				stringstream ss = blog.getThisPost(request->path_match[1]);
+				blog.sendPage(request, response, ss.str()); 
+				blog.reload = true;
+			});
+			work_thread.detach();
+		}
 	};
 
 	server.resource["^/api/home$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
 		shared_ptr<HttpServer::Request> request) {
 
-		thread work_thread([response, request, &blog] {
-			stringstream ss = blog.getPosts();
-			blog.sendPage(request, response, ss.str());
-		});
-		work_thread.detach();
+		if (!blog.reload || blog.ss_posts.length() == 0) {
+			thread work_thread([response, request, &blog] 
+			{
+				stringstream ss = blog.getPosts();
+				blog.sendPage(request, response, ss.str());
+				cout << "[ Using hdd... ]" << std::endl;
+			});
+			work_thread.detach();
+		}
+		else {
+			blog.sendPage(request, response, blog.ss_posts);
+			cout << "[ Using cache... ]" << std::endl;
+		}
 	};
 
 	server.resource["^/post$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,

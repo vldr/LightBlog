@@ -27,7 +27,7 @@ BlogSystem::BlogSystem(std::string user, std::string pwd, std::string db, std::s
 
 	}
 	catch (sql::SQLException &e) {
-		cout << "[ Failed to connect to mysql server! ]" << endl;
+		cout << "[ Failed to connect to mysql server! Error: " << e.getErrorCode() << "]" << endl;
 	}
 }
 
@@ -56,7 +56,7 @@ void BlogSystem::sendPage404(shared_ptr<HttpServer::Request> request, shared_ptr
 	for (auto& header : request->header) {
 		if (header.first == "X-Forwarded-For") {
 			iisIP = header.second;
-		} 
+		}  
 	}
 
 	if (iisIP != "")
@@ -171,7 +171,7 @@ void BlogSystem::processPostPOST(shared_ptr<HttpServer::Request> request, shared
 		string key;
 		string value;
 
-		int positionOfEquals = query.find("=");
+		size_t positionOfEquals = query.find("=");
 		key = query.substr(0, positionOfEquals);
 		if (positionOfEquals != string::npos)
 			value = query.substr(positionOfEquals + 1);
@@ -304,7 +304,8 @@ void BlogSystem::processEditGET(shared_ptr<HttpServer::Request> request, shared_
 				// Replace all textarea tags with SCEditor
 				$('textarea').sceditor({
 					plugins: 'bbcode',
-					style: 'minified/jquery.sceditor.default.min.css'
+					style: 'minified/jquery.sceditor.default.min.css',
+					charset: 'ascii'
 				});
 			});
 		</script>
@@ -337,7 +338,7 @@ void BlogSystem::processEditPOST(shared_ptr<HttpServer::Request> request, shared
 		string key;
 		string value;
 
-		int positionOfEquals = query.find("=");
+		size_t positionOfEquals = query.find("=");
 		key = query.substr(0, positionOfEquals);
 		if (positionOfEquals != string::npos)
 			value = query.substr(positionOfEquals + 1);
@@ -365,8 +366,8 @@ void BlogSystem::processEditPOST(shared_ptr<HttpServer::Request> request, shared
 
 		if (key == "content") {
 			std::replace(value.begin(), value.end(), '+', ' ');
-			value = UriDecode(value);
 
+			value = UriDecode(value);
 			encode(value);
 			con = value;
 		}
@@ -497,7 +498,7 @@ void BlogSystem::processDeletePOST(shared_ptr<HttpServer::Request> request, shar
 		string key;
 		string value;
 
-		int positionOfEquals = query.find("=");
+		size_t positionOfEquals = query.find("=");
 		key = query.substr(0, positionOfEquals);
 		if (positionOfEquals != string::npos)
 			value = query.substr(positionOfEquals + 1);
@@ -567,7 +568,7 @@ std::stringstream BlogSystem::getInfo(std::string input)
 
 		res.reset(pstmt->executeQuery());
 
-		int count = res->rowsCount();
+		size_t count = res->rowsCount();
 
 		if (count <= 0) {
 			ss << "User not found!!";
@@ -623,6 +624,7 @@ std::stringstream BlogSystem::parseBlob(istream* blob) {
 	return s;
 }
 
+
 std::stringstream BlogSystem::getPosts()
 {
 	std::stringstream ss;
@@ -645,13 +647,15 @@ std::stringstream BlogSystem::getPosts()
 		pstmt.reset(con->prepareStatement("SELECT * FROM posts ORDER by id DESC"));
 		res.reset(pstmt->executeQuery());
 
-		int count = res->rowsCount();
+		size_t count = res->rowsCount();
 
 		if (count <= 0) {
 			ss << "<br><br><center>No posts...<center>";
 
 			pstmt->close();
 			con->close();
+
+			reload = false;
 
 			return ss;
 		}
@@ -704,6 +708,9 @@ std::stringstream BlogSystem::getPosts()
 		ss << "mysql server failure";
 	}
 
+	ss_posts = ss.str();
+	reload = true;
+
 	return ss;
 }
 
@@ -731,7 +738,7 @@ std::stringstream BlogSystem::getPostInformationById(int &reply, std::string pos
 
 		res.reset(pstmt->executeQuery());
 
-		int count = res->rowsCount();
+		size_t count = res->rowsCount();
 
 		if (count <= 0) {
 			ss << "";
@@ -740,7 +747,6 @@ std::stringstream BlogSystem::getPostInformationById(int &reply, std::string pos
 			con->close();
 
 			reply = 0;
-
 			return ss;
 		}
 
@@ -800,7 +806,7 @@ std::stringstream BlogSystem::getThisPost(std::string post_id)
 
 		res.reset(pstmt->executeQuery());
 
-		int count = res->rowsCount();
+		size_t count = res->rowsCount();
 
 		if (count != 1) {
 			ss << "<br><br><center> Post was not found or duplicate posts... </center>";
@@ -837,6 +843,11 @@ std::stringstream BlogSystem::getThisPost(std::string post_id)
 						</div>
 					</div>
 				)V0G0N";
+
+				cout << "[ Using hdd saving item... ]" << std::endl;
+
+				ss_articles[post_id] = ss.str();
+				reload = true;
 			}
 			if (pstmt->getMoreResults())
 			{
@@ -848,7 +859,6 @@ std::stringstream BlogSystem::getThisPost(std::string post_id)
 
 		pstmt->close();
 		con->close();
-
 	}
 	catch (sql::SQLException &e) {
 		cout << "# ERR: SQLException in " << __FILE__;
@@ -870,7 +880,7 @@ std::string BlogSystem::getSessionCookie(shared_ptr<HttpServer::Request> request
 			string query = header.second;
 			string key;
 			string value;
-			int positionOfEquals = query.find("=");
+			size_t positionOfEquals = query.find("=");
 			key = query.substr(0, positionOfEquals);
 			if (positionOfEquals != string::npos)
 				value = query.substr(positionOfEquals + 1);
@@ -883,6 +893,8 @@ std::string BlogSystem::getSessionCookie(shared_ptr<HttpServer::Request> request
 
 int BlogSystem::createPost(std::string title, std::string content, std::string author)
 {
+	
+
 	string url(user_g);
 	const string user(pwd_g);
 	const string pass(db_g);
@@ -914,7 +926,9 @@ int BlogSystem::createPost(std::string title, std::string content, std::string a
 
 		res.reset(pstmt->executeQuery());
 
-		int count = res->rowsCount();
+		getPosts();
+
+		size_t count = res->rowsCount();
 
 		if (count <= 0) {
 			pstmt->close();
@@ -944,6 +958,8 @@ int BlogSystem::createPost(std::string title, std::string content, std::string a
 
 int BlogSystem::updatePost(std::string post_id, std::string title, std::string content, std::string author)
 {
+	
+
 	string url(user_g);
 	const string user(pwd_g);
 	const string pass(db_g);
@@ -959,7 +975,7 @@ int BlogSystem::updatePost(std::string post_id, std::string title, std::string c
 		std::auto_ptr< sql::PreparedStatement >  pstmt;
 		std::auto_ptr< sql::ResultSet > res;
 
-		time_t t = time(0);
+		time_t t = time(0); 
 		struct tm * now = localtime(&t);
 		stringstream stime;
 		stime << now->tm_mday << '/'
@@ -975,9 +991,16 @@ int BlogSystem::updatePost(std::string post_id, std::string title, std::string c
 		pstmt->setString(4, author);
 		pstmt->setString(5, post_id);
 
+		
+
 		res.reset(pstmt->executeQuery());
 
-		int count = res->rowsCount();
+		getThisPost(post_id);
+		getPosts();
+
+		size_t count = res->rowsCount();
+
+
 
 		if (count <= 0) {
 			pstmt->close();
@@ -991,6 +1014,8 @@ int BlogSystem::updatePost(std::string post_id, std::string title, std::string c
 
 			return 1;
 		}
+
+
 	}
 	catch (sql::SQLException e) {
 		cout << "# ERR: SQLException in " << __FILE__;
@@ -1027,7 +1052,9 @@ int BlogSystem::deletePost(std::string post_id)
 
 		res.reset(pstmt->executeQuery());
 
-		int count = res->rowsCount();
+		getPosts();
+
+		size_t count = res->rowsCount();
 
 		if (count <= 0) {
 			pstmt->close();
@@ -1084,7 +1111,7 @@ int BlogSystem::processLogin(std::string user_input, std::string pwd_input)
 
 		res.reset(pstmt->executeQuery());
 
-		int count = res->rowsCount();
+		size_t count = res->rowsCount();
 
 		if (count <= 0) {
 			ss << "User information is incorrect...";
@@ -1141,7 +1168,7 @@ std::string BlogSystem::getUserID(std::string user_input, std::string pwd_input)
 
 		res.reset(pstmt->executeQuery());
 
-		int count = res->rowsCount();
+		size_t count = res->rowsCount();
 
 		if (count != 1) {
 			pstmt->close();
