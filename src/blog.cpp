@@ -33,7 +33,7 @@ BlogSystem::BlogSystem(std::string user, std::string pwd, std::string db, std::s
 
 void BlogSystem::sendPage(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response, std::string ss)
 {
-	std::string iisIP = "";
+	/*std::string iisIP = "";
 	for (auto& header : request->header) {
 		if (header.first == "X-Forwarded-For") {
 			iisIP = header.second;
@@ -45,14 +45,14 @@ void BlogSystem::sendPage(shared_ptr<HttpServer::Request> request, shared_ptr<Ht
 		request->remote_endpoint_port << " has requested (" << request->path << ")...\n";
 	else
 		cout << ">> " << request->remote_endpoint_address << ":" <<
-		request->remote_endpoint_port << " has requested (" << request->path << ")...\n";
+		request->remote_endpoint_port << " has requested (" << request->path << ")...\n";*/
 
 	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << ss.length() << "\r\n\r\n" << ss.c_str();
 }
 
 void BlogSystem::sendPage404(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response, string ss)
 {
-	std::string iisIP = "";
+	/*std::string iisIP = "";
 	for (auto& header : request->header) {
 		if (header.first == "X-Forwarded-For") {
 			iisIP = header.second;
@@ -64,7 +64,7 @@ void BlogSystem::sendPage404(shared_ptr<HttpServer::Request> request, shared_ptr
 		request->remote_endpoint_port << " has requested (" << request->path << ")...\n";
 	else
 		cout << ">> " << request->remote_endpoint_address << ":" <<
-		request->remote_endpoint_port << " has requested (" << request->path << ")...\n";
+		request->remote_endpoint_port << " has requested (" << request->path << ")...\n";*/
 
 	*response << "HTTP/1.1 404 Not found\r\nContent-Length: " << ss.length() << "\r\n\r\n" << ss;
 }
@@ -212,8 +212,8 @@ void BlogSystem::processPostPOST(shared_ptr<HttpServer::Request> request, shared
 
 		content << "<html><head><meta http-equiv=\"refresh\" content=\"0; url=../\" /></head>OK posted...</html>";
 
-		cout << ">> " << request->remote_endpoint_address << ":" <<
-			request->remote_endpoint_port << " has requested (" << request->path << ")...\n";
+		/*cout << ">> " << request->remote_endpoint_address << ":" <<
+			request->remote_endpoint_port << " has requested (" << request->path << ")...\n";*/
 
 		if (password.length() != 64)
 			password = sha256(password);
@@ -386,8 +386,8 @@ void BlogSystem::processEditPOST(shared_ptr<HttpServer::Request> request, shared
 
 		content << "<html><head><meta http-equiv=\"refresh\" content=\"0; url=../view/" << post_id << "\" /></head>OK posted...</html>";
 
-		cout << ">> " << request->remote_endpoint_address << ":" <<
-			request->remote_endpoint_port << " has requested (" << request->path << ")...\n";
+		/*cout << ">> " << request->remote_endpoint_address << ":" <<
+			request->remote_endpoint_port << " has requested (" << request->path << ")...\n";*/
 
 		if (password.length() != 64)
 			password = sha256(password);
@@ -530,8 +530,8 @@ void BlogSystem::processDeletePOST(shared_ptr<HttpServer::Request> request, shar
 
 		content << "<html><head><meta http-equiv=\"refresh\" content=\"0; url=../\" /></head>OK posted...</html>";
 
-		cout << ">> " << request->remote_endpoint_address << ":" <<
-			request->remote_endpoint_port << " has requested (" << request->path << ")...\n";
+		/*cout << ">> " << request->remote_endpoint_address << ":" <<
+			request->remote_endpoint_port << " has requested (" << request->path << ")...\n";*/
 
 		if (password.length() != 64)
 			password = sha256(password);
@@ -844,7 +844,7 @@ std::stringstream BlogSystem::getThisPost(std::string post_id)
 					</div>
 				)V0G0N";
 
-				cout << "[ Using hdd saving item... ]" << std::endl;
+				//cout << "[ Using hdd saving item... ]" << std::endl;
 
 				ss_articles[post_id] = ss.str();
 				reload = true;

@@ -29,6 +29,8 @@ std::string DB_USER = "root";
 std::string DB_PASS = "";
 std::string DB_DB = "blog";
 
+#define DBG
+
 using namespace std;
 using namespace boost::property_tree;
 
@@ -36,9 +38,11 @@ void default_resource_send(const HttpServer &server, const shared_ptr<HttpServer
 	const shared_ptr<ifstream> &ifs); 
 
 int main(int argc, char* argv[]) {
+#ifdef DBG
 	cout << "[ vldr web app - " << __DATE__ << " ]" << std::endl;
+#endif // DBG
 
-	HttpServer server(8080, 2);
+	HttpServer server(8080, 1);
 	
 	if (argc == 5) {
 		DB_HOST = argv[1];
@@ -60,7 +64,7 @@ int main(int argc, char* argv[]) {
 
 		if (blog.reload) {
 			if (blog.ss_articles.find(request->path_match[1]) == blog.ss_articles.end()) {
-				cout << "[ Using hdd not found item... ]" << std::endl;
+				//cout << "[ Using hdd not found item... ]" << std::endl;
 
 				thread work_thread([response, request, &blog] {
 					stringstream ss = blog.getThisPost(request->path_match[1]);
@@ -70,7 +74,7 @@ int main(int argc, char* argv[]) {
 				work_thread.detach();
 			}
 			else {
-				cout << "[ Using cache... ]" << std::endl;
+				//cout << "[ Using cache... ]" << std::endl;
 
 				blog.sendPage(request, response, blog.ss_articles[request->path_match[1]]);
 			}
@@ -93,13 +97,13 @@ int main(int argc, char* argv[]) {
 			{
 				stringstream ss = blog.getPosts();
 				blog.sendPage(request, response, ss.str());
-				cout << "[ Using hdd... ]" << std::endl;
+				//cout << "[ Using hdd... ]" << std::endl;
 			});
 			work_thread.detach();
 		}
 		else {
 			blog.sendPage(request, response, blog.ss_posts);
-			cout << "[ Using cache... ]" << std::endl;
+			//cout << "[ Using cache... ]" << std::endl;
 		}
 	};
 
