@@ -1,4 +1,4 @@
-<img src="http://i.imgur.com/FmlGIFC.png" />
+<img src="http://i.imgur.com/1HMmEwX.png" />
 
 # LightBlogExpress
 Robust, Fast, MySQL bbcode http blog system written in C++ (tested on MSVC2015). The project is based off of (https://github.com/vldr/LightBlog) and (https://github.com/eidheim/Simple-Web-Server).
@@ -24,6 +24,9 @@ LightBlogExpress uses <b>MySQL</b>, and uses <b>SHA256</b> hashing for passwords
 Default username and password is:
 
 `vlad` and `test`
+
+# Images
+<img src="http://i.imgur.com/FmlGIFC.png" />
 
 # Demo 
 http://blog.vldr.org/
