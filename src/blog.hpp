@@ -39,7 +39,11 @@ public:
 	void sendPage(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response, std::string ss);
 	void sendPage404(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response, std::string ss);
 
+	void processLogoutGET(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
+
 	void processPostGET(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
+	void processLoginGET(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
+	void processLoginPOST(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
 	void processPostPOST(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
 
 	void processEditGET(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
@@ -174,9 +178,24 @@ public:
 		delete[] pStart;
 		return sResult;
 	}
+
+	string RandomString(int len)
+	{
+		srand(time(0));
+		string str = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+		string newstr;
+		int pos;
+		while (newstr.size() != len) {
+			pos = ((rand() % (str.size() - 1)));
+			newstr += str.substr(pos, 1);
+		}
+		return newstr;
+	}
+
 	bool reload = false;
 	std::string ss_posts;
 	std::map<string, string> ss_articles;
+	std::map<string, std::pair<string, string>> sessions;
 protected:
 	
 	std::string user_g;

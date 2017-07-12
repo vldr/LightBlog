@@ -123,6 +123,60 @@ int main(int argc, char* argv[]) {
 		work_thread.detach();
 	};
 
+	server.resource["^/logout$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
+		shared_ptr<HttpServer::Request> request) {
+
+		thread work_thread([response, request, &blog] {
+			blog.processLogoutGET(request, response);
+		});
+		work_thread.detach();
+	};
+
+	server.resource["^/login$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
+		shared_ptr<HttpServer::Request> request) {
+
+		thread work_thread([response, request, &blog] {
+			blog.processLoginGET(request, response);
+		});
+		work_thread.detach();
+	};
+
+	server.resource["^/login$"]["POST"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
+		shared_ptr<HttpServer::Request> request) {
+
+		thread work_thread([response, request, &blog] {
+			blog.processLoginPOST(request, response);
+		});
+		work_thread.detach();
+	};
+
+	server.resource["^/reload$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
+		shared_ptr<HttpServer::Request> request) {
+
+
+		thread work_thread([response, request, &blog] {
+			if (blog.sessions.find(blog.getSessionCookie(request)) != blog.sessions.end()) {
+				std::pair<string, string> val = blog.sessions[blog.getSessionCookie(request)];
+				if (blog.processLogin(val.first, val.second) == 1) {
+					blog.reload = false;
+					blog.ss_articles.clear();
+					blog.ss_posts.clear();
+					blog.sendPage(request, response, "Cache cleared...");
+					return;
+				}
+				else {
+					blog.sendPage(request, response, "You need to be logged in to perform this action...");
+					return;
+				}
+			}
+			else {
+				blog.sendPage(request, response, "You need to be logged in to perform this action...");
+				return;
+			}
+		});
+		work_thread.detach();
+	};
+
 	server.resource["^/edit/([a-z,A-Z,0-9]+)$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
 		shared_ptr<HttpServer::Request> request) {
 
