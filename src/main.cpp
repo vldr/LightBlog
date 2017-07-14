@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
 
 	HttpServer server(8080, 1);
 	
-	if (argc == 5) {
+	if (argc == 6) {
 		DB_HOST = argv[1];
 		DB_USER = argv[2];
 
@@ -55,6 +55,8 @@ int main(int argc, char* argv[]) {
 		
 		DB_DB = argv[4];
 		cout << "[ Using parameters to connect... ]" << std::endl;
+		
+		server.config.port = atoi(argv[5]);
 	}
 
 	BlogSystem blog(DB_HOST, DB_USER, DB_PASS, DB_DB);
