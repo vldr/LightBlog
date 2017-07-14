@@ -23,7 +23,8 @@ I haven't tested with GCC or any other compiler other than MSVC2015 but it shoul
 Usage: `LightBlog.exe DB_HOST DB_USER DB_PASS DB_NAME PORT`
 
 ### macOS Sierra (xcode developer tools required)
-Usage: `./lightblog.macos DB_HOST DB_USER DB_PASS DB_NAME PORT`
+Usage: `chmod +x lightblog.macos`
+`./lightblog.macos DB_HOST DB_USER DB_PASS DB_NAME PORT`
 
 # Database
 LightBlogExpress uses <b>MySQL</b>, and uses <b>SHA256</b> hashing for passwords.
