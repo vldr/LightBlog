@@ -22,7 +22,7 @@ I haven't tested with GCC or any other compiler other than MSVC2015 but it shoul
 - Requires <a href="https://www.microsoft.com/en-ca/download/details.aspx?id=48145">Visual C++ Redist. 2015</a><br>
 Usage: `LightBlog.exe DB_HOST DB_USER DB_PASS DB_NAME PORT`
 
-### macOS Sierra (xcode developer tools required)
+### macOS Sierra (xcode developer tools required) (boost)
 Setup: 
 1. `ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"`
 2. `brew install boost`
