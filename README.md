@@ -3,18 +3,14 @@
 # LightBlogExpress
 LightBlog Express is the fastest and most robust blog written in C++ (tested on MSVC2015). The project is based off of (https://github.com/vldr/LightBlog) and (https://github.com/eidheim/Simple-Web-Server).
 
-
-LightBlogExpress is insanely fast, and was able to withstand load of up to ~695 clients per second on a Intel Core i3 machine using the  smart caching system...
+LightBlogExpress is insanely fast and was able to withstand load of up to ~695 clients per second using the caching system...
+It is effortless to implement custom themes and modules for the blog system. Successfully compiled on macOS Sierra and Windows 10.
 
 <img src="http://i.imgur.com/o1AVmjp.png" />
 
-It's also incredibly easy to create themes for this blog system, and adding things to it isn't too hard.
-
-I haven't tested with GCC or any other compiler other than MSVC2015 but it should work since the whole project isn't dependent on any windows headers.
-
 # Dependencies
 * Boost C++ libraries
-* OpenSSL libraries
+* OpenSSL libraries (if you wish to use HTTPS, you will need to implement it yourself).
 * MySQL Connector (https://dev.mysql.com/downloads/connector/cpp/)
 
 # Binaries
