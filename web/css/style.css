@@ -23,6 +23,17 @@ a:hover{
 	font-weight:400;
 }
 
+.status-bar {
+	font-size:10px;
+	position:fixed;
+	top:10;
+	left:10;
+	padding:10px;
+	color:black;
+	background-color:lightgray;
+	border-radius:5px;
+}
+
 .header{
 	padding-top: 50px;
 	padding-bottom: 50px;
