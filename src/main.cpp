@@ -55,7 +55,6 @@ int main(int argc, char* argv[]) {
 		
 		DB_DB = argv[4];
 		cout << "[ Using parameters to connect... ]" << std::endl;
-		
 		server.config.port = atoi(argv[5]);
 	}
 

@@ -5,6 +5,12 @@
 #include <iterator>
 #include <string>
 
+/**
+	TODO: 
+	- remove namespace...
+	- remove bbcode namespace...
+	- remove all the dodgy code.
+**/
 using namespace std;
 using namespace bbcode;
 
@@ -50,7 +56,11 @@ void BlogSystem::sendPage(shared_ptr<HttpServer::Request> request, shared_ptr<Ht
 	if (sessions.find(getSessionCookie(request)) != sessions.end()) {
 		std::pair<string, string> val = sessions[getSessionCookie(request)];
 		if (processLogin(val.first, val.second) == 1) {
-			ss.append("<span style='font-size:10px;position:fixed;top:10;left:10;padding:10px;color:black;background-color:lightgray;border-radius:5px;'><a href='logout' style='color:black;'> Logged in as: " + val.first + "</a></span>");
+			// Bodgenation
+			ss.append("<span style='text-align: left;font-size:10px; position:fixed; top:10; left:10; padding:10px; color:black; background-color:lightgray; border-radius:5px;'><a href='/logout' style='color:black;text-decoration:underline;'>Welcome, " + val.first + ".</a>"
+				+ (request->path_match[0] == std::string("/api/view/") + std::string(request->path_match[1]) ? "<br><hr><a style='color:black;' href='/edit/" + std::string(request->path_match[1]) + "'>Edit</a><br>"
+				+ " <a style='color:black;' href='/delete/" + std::string(request->path_match[1]) + "'>Delete</a><br>" + "<a style='color:black;' href='/post'>New</a>"  
+				: "<br><hr><a style='color:black;' href='/post'>New</a>") + "</span>");
 		}
 	}
 	
