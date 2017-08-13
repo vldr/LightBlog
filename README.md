@@ -25,6 +25,25 @@ Setup:
 3. `chmod +x lightblog.macos`
 4. `./lightblog.macos DB_HOST DB_USER DB_PASS DB_NAME PORT`
 
+### Ubuntu 14.04 x64
+Setup:
+1. `apt-get update`
+2. `sudo apt-get install libboost-all-dev`
+3. `sudo apt-get update && \
+sudo apt-get install build-essential software-properties-common -y && \
+sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y && \
+sudo apt-get update && \
+sudo apt-get install gcc-snapshot -y && \
+sudo apt-get update && \
+sudo apt-get install gcc-6 g++-6 -y && \
+sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-6 60 --slave /usr/bin/g++ g++ /usr/bin/g++-6 && \
+sudo apt-get install gcc-4.8 g++-4.8 -y && \
+sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 60 --slave /usr/bin/g++ g++ /usr/bin/g++-4.8;`
+4. `wget https://github.com/vldr/LightBlogExpress/raw/master/bin/ubuntu1404x64mysql/libmysqlcppconn.so`
+5. `wget https://github.com/vldr/LightBlogExpress/raw/master/bin/lightblog.ubuntu1404x64`
+6. `chmod +x lightblog.ubuntu1404x64`
+7. `./lightblog.ubuntu1404x64 DB_HOST DB_USER DB_PASS DB_NAME PORT`
+
 # Database
 LightBlogExpress uses <b>MySQL</b>, and uses <b>SHA256</b> hashing for passwords.
 
