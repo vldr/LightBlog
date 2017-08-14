@@ -26,7 +26,7 @@ target_link_libraries(lightblog ${Boost_LIBRARIES})
 target_link_libraries(lightblog ${CMAKE_THREAD_LIBS_INIT})
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-# ↓ EDIT THE LINES ABOVE TO ACCOMMODATE TO YOUR PATH OF THE STATIC OR DYNAMIC MYSQLCONNECTOR. ↓ # 
+# ↓ EDIT THE LINES BELOW TO ACCOMMODATE TO YOUR PATH OF THE STATIC OR DYNAMIC MYSQLCONNECTOR. ↓ # 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
 target_link_libraries(lightblog ../mysqlconnector/lib/libmysqlcppconn-static.a)
