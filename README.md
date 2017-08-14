@@ -1,12 +1,9 @@
 <img src="http://i.imgur.com/1HMmEwX.png" />
 
 # LightBlogExpress
-LightBlog Express is the fastest and most robust blog written in C++ (tested on MSVC2015). The project is based off of (https://github.com/vldr/LightBlog) and (https://github.com/eidheim/Simple-Web-Server).
+LightBlog Express is a very fast, and light weight blog written in C++. The project is based off of (https://github.com/vldr/LightBlog) and (https://github.com/eidheim/Simple-Web-Server). Successfully compiled on macOS Sierra, Ubuntu 14.04, and Windows 10.
 
-LightBlogExpress is insanely fast and was able to withstand load of up to ~19953 clients per second using the caching system...
-It is effortless to implement custom themes and modules for the blog system. Successfully compiled on macOS Sierra, Ubuntu 14.04, and Windows 10.
-
-<img src="http://i.imgur.com/PSCLLbr.png" />
+I'm gladly looking for contributions for any bugs, features, et al.
 
 # Dependencies
 * Boost C++ libraries
@@ -16,6 +13,9 @@ It is effortless to implement custom themes and modules for the blog system. Suc
 # Binaries
 ### Windows
 - Requires <a href="https://www.microsoft.com/en-ca/download/details.aspx?id=48145">Visual C++ Redist. 2015</a><br>
+- Requires <a href="https://go.microsoft.com/fwlink/?LinkId=746572">Visual C++ Redist. 2017</a><br>
+- Requires https://github.com/vldr/LightBlogExpress/raw/master/bin/windowsx64/mysqlcppconn.dll
+
 Usage: `LightBlog.exe DB_HOST DB_USER DB_PASS DB_NAME PORT`
 
 ### macOS Sierra (xcode developer tools required) (boost)

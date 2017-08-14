@@ -24,8 +24,18 @@ endif()
 add_executable(lightblog main.cpp blog.cpp sha256.cpp bbcode/bbcode_lexer.cpp bbcode/bbcode_parser.cpp bbcode/bbcode_utils.cpp)
 target_link_libraries(lightblog ${Boost_LIBRARIES})
 target_link_libraries(lightblog ${CMAKE_THREAD_LIBS_INIT})
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+# ↓ EDIT THE LINES BELOW TO ACCOMMODATE TO YOUR PATH OF THE STATIC OR DYNAMIC MYSQLCONNECTOR. ↓ # 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+
 target_link_libraries(lightblog ../mysqlconnector/lib/libmysqlcppconn-static.a)
 include_directories(../mysqlconnector/include/)
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+# ↑ EDIT THE LINES ABOVE TO ACCOMMODATE TO YOUR PATH OF THE STATIC OR DYNAMIC MYSQLCONNECTOR. ↑ # 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+
 
 #TODO: add requirement for version 1.0.1g (can it be done in one line?)
 find_package(OpenSSL)

@@ -42,7 +42,7 @@
 					}
 				}
 				
-				if (URI[3].length == 0)
+				if (URI[3].length == 0 || URI[3] == 'index')
 					xhr.open('GET', '/api/home');
 				else
 					xhr.open('GET', 'api/home/' + URI[3]);
