@@ -7,7 +7,7 @@
 	<body>
 		<div class="header">
 			<a href="../" >
-				<img class="logo" src="img/logo.png"/>
+				<img class="logo" src="../img/logo.png"/>
 			</a>	
 		</div>
 

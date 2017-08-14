@@ -56,7 +56,7 @@ public:
 	void processDeletePOST(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
 
 	std::stringstream getInfo(std::string input);
-	std::stringstream getPosts();
+	std::stringstream getPosts(int page = 0);
 	std::stringstream getPostInformationById(int &reply, std::string id, std::string info);
 	std::stringstream getThisPost(std::string post_id);
 
@@ -194,7 +194,7 @@ public:
 		}
 		return newstr;
 	}
-	const std::string CACHEHOME = "home";
+	std::string CACHEHOME = "home";
 
 	std::map<string, string> cache;
 	std::map<string, std::pair<string, string>> sessions;

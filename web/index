@@ -14,6 +14,7 @@
 		<div class="content" id="content">
 			<!-- Start Posts -->
 			<script>
+				var URI = document.URL.split('/');	
 				var xhr;
 				var timer; 
 
@@ -40,7 +41,12 @@
 						} 
 					}
 				}
-				xhr.open('GET', 'api/home');
+				
+				if (URI[3].length == 0)
+					xhr.open('GET', '/api/home');
+				else
+					xhr.open('GET', 'api/home/' + URI[3]);
+					
 				xhr.send(null);
 			</script>
 			<!-- End Posts -->

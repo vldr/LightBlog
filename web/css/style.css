@@ -51,6 +51,7 @@ a:hover{
 
 .content{	
 	width: 100%;
+	text-align: center;
 }
 
 .footer{
@@ -72,14 +73,22 @@ a:hover{
 	-webkit-box-shadow: 3px 3px 22px 3px rgba(0,0,0,0.20);
 	-moz-box-shadow: 3px 3px 22px 3px rgba(0,0,0,0.20);
 	box-shadow: 3px 3px 22px 3px rgba(0,0,0,0.20);
+	
+	-webkit-animation: fadein 0.8s;
+    -moz-animation: fadein 0.8s;
+    -ms-animation: fadein 0.8s;
+    -o-animation: fadein 0.8s;
+    animation: fadein 0.8s;
 }
 
 .postTitleOnPage {
    font-size: 50px;  
+   text-align:left;
 }
 
 .postHeader{
 	overflow: hidden;
+	text-align: left;
 }
 
 .postTitle{
@@ -104,6 +113,7 @@ a:hover{
 
 .postContent{
 	color: black;
+	text-align: left;
 }
 
 .postContent img{
@@ -189,6 +199,40 @@ a:hover{
 	cursor: pointer;
 }
 
+.nextButton {
+	display:inline-block;
+	margin: 0 auto;
+    text-align: center;
+    width: 100;
+    border-radius: 5px;
+    text-decoration: none;
+    padding: 10px;
+    background-color: white;
+	margin:5px;
+	
+}
+
+.backButton {
+	display:inline-block;
+	margin: 0 auto;
+    text-align: center;
+    width: 100;
+    border-radius: 5px;
+    text-decoration: none;
+    padding: 10px;
+    background-color: white;
+	margin:5px;
+	
+}
+
+.nextButton a {
+	text-decoration:none;
+}
+
+.backButton a {
+	text-decoration:none;
+}
+
 .loader {
 	border: 4px solid rgba(238, 238, 238, 0);
 	border-radius: 50%;
@@ -208,4 +252,29 @@ a:hover{
 @keyframes spin {
 	0% { transform: rotate(0deg); }
 	100% { transform: rotate(360deg); }
+}
+
+@keyframes fadein {
+	from { opacity: 0; }
+	to   { opacity: 1; }
+}
+
+@-moz-keyframes fadein {
+	from { opacity: 0; }
+	to   { opacity: 1; }
+}
+
+@-webkit-keyframes fadein {
+	from { opacity: 0; }
+	to   { opacity: 1; }
+}
+
+@-ms-keyframes fadein {
+	from { opacity: 0; }
+	to   { opacity: 1; }
+}
+
+@-o-keyframes fadein {
+	from { opacity: 0; }
+	to   { opacity: 1; }
 }

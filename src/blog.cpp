@@ -698,7 +698,7 @@ std::stringstream BlogSystem::parseBlob(istream* blob) {
 	return s;
 }
 
-std::stringstream BlogSystem::getPosts()
+std::stringstream BlogSystem::getPosts(int page)
 {
 	std::stringstream ss;
 
@@ -717,7 +717,9 @@ std::stringstream BlogSystem::getPosts()
 		std::auto_ptr< sql::PreparedStatement >  pstmt;
 		std::auto_ptr< sql::ResultSet > res;
 
-		pstmt.reset(con->prepareStatement("SELECT * FROM posts ORDER by id DESC"));
+		pstmt.reset(con->prepareStatement("SELECT * FROM posts ORDER by id DESC LIMIT 10 OFFSET ?"));
+		pstmt->setInt(1, (page * 10));
+
 		res.reset(pstmt->executeQuery());
 
 		size_t count = res->rowsCount();
@@ -728,7 +730,7 @@ std::stringstream BlogSystem::getPosts()
 			pstmt->close();
 			con->close();
 
-			cache.erase(CACHEHOME);
+			cache.erase(CACHEHOME + std::to_string(page));
 			
 			return ss;
 		}
@@ -753,12 +755,12 @@ std::stringstream BlogSystem::getPosts()
 						</div>
 						<div class="postContent"><p style="white-space:pre-wrap;">)V0G0N" << bbCodeParsed << R"V0G0N(</p></div>
 						<div class="postFooter">
-							<!--<a href="post"><img class="editPostButton" src="http://www.famfamfam.com/lab/icons/silk/icons/application_add.png" /></a>-->
 							<span class="postAuthor">)V0G0N" << res->getString("author") << R"V0G0N(</span>
 						</div>
 					</div>
 				)V0G0N";
 			}
+
 			if (pstmt->getMoreResults())
 			{
 				res.reset(pstmt->getResultSet());
@@ -766,6 +768,19 @@ std::stringstream BlogSystem::getPosts()
 			}
 			break;
 		}
+
+		pstmt.reset(con->prepareStatement("SELECT * FROM posts ORDER by id DESC"));
+		res.reset(pstmt->executeQuery());
+
+		count = res->rowsCount();
+
+		if ((count - (page * 10)) == count)
+			ss << "<a href=\"/" << (page + 1) << "\"><div class=\"nextButton\">Next</div></a>";
+		else if ((count - (page * 10)) > 10) 
+			ss << "<a href=\"/" << (page - 1) << "\"><div class=\"backButton\">Back</div></a>"
+			   << "<a href=\"/" << (page + 1) << "\"><div class=\"nextButton\">Next</div></a>";
+		else 
+			ss << "<a href=\"/" << (page - 1) << "\"><div class=\"backButton\">Back</div></a>";
 
 		pstmt->close();
 		con->close();
@@ -781,7 +796,7 @@ std::stringstream BlogSystem::getPosts()
 		ss << "mysql server failure";
 	}
 
-	cache[CACHEHOME] = ss.str();
+	cache[CACHEHOME + std::to_string(page)] = ss.str();
 
 	return ss;
 }
@@ -1003,7 +1018,7 @@ int BlogSystem::createPost(std::string title, std::string content, std::string a
 
 		res.reset(pstmt->executeQuery());
 
-		cache.erase(CACHEHOME);
+		cache.clear();
 
 		size_t count = res->rowsCount();
 
@@ -1070,8 +1085,7 @@ int BlogSystem::updatePost(std::string post_id, std::string title, std::string c
 
 		res.reset(pstmt->executeQuery());
 
-		cache.erase(post_id);
-		cache.erase(CACHEHOME);
+		cache.clear();
 
 		size_t count = res->rowsCount();
 
@@ -1125,8 +1139,7 @@ int BlogSystem::deletePost(std::string post_id)
 
 		res.reset(pstmt->executeQuery());
 
-		cache.erase(post_id);
-		cache.erase(CACHEHOME);
+		cache.clear();
 
 		size_t count = res->rowsCount();
 
