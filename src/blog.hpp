@@ -194,7 +194,8 @@ public:
 		}
 		return newstr;
 	}
-	std::string CACHEHOME = "home";
+	const std::string CACHEHOME = "home";
+	const std::string REGEXNUMBER = "([0-9]{1,9})";
 
 	std::map<string, string> cache;
 	std::map<string, std::pair<string, string>> sessions;

@@ -43,10 +43,10 @@ int main(int argc, char* argv[])
 #ifdef _WIN32
 	system("cls");
 #endif // _WIN32
+
 	cout << "[ vldr web app - " << __DATE__ << " ]" << std::endl;
 
 	HttpServer server(8080, 1);
-	
 	if (argc == 6) {
 		DB_HOST = argv[1];
 		DB_USER = argv[2];
@@ -63,7 +63,9 @@ int main(int argc, char* argv[])
 
 	BlogSystem blog(DB_HOST, DB_USER, DB_PASS, DB_DB);
 
-	server.resource["^/api/view/([a-z,A-Z,0-9]+)$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
+
+
+	server.resource["^/api/view/" + blog.REGEXNUMBER + "$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
 		shared_ptr<HttpServer::Request> request) {
 		if (blog.cache.find(request->path_match[1]) == blog.cache.end()) {
 			thread work_thread([response, request, &blog]
@@ -97,7 +99,7 @@ int main(int argc, char* argv[])
 		}
 	};
 
-	server.resource["^/api/home/([0-9]{1,9})$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
+	server.resource["^/api/home/" + blog.REGEXNUMBER + "$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
 		shared_ptr<HttpServer::Request> request) {
 		if (blog.cache.find(blog.CACHEHOME + std::string(request->path_match[1])) == blog.cache.end()) {
 			thread work_thread([response, request, &blog]
@@ -176,7 +178,7 @@ int main(int argc, char* argv[])
 		work_thread.detach();
 	};
 
-	server.resource["^/edit/([a-z,A-Z,0-9]+)$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
+	server.resource["^/edit/" + blog.REGEXNUMBER + "$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
 		shared_ptr<HttpServer::Request> request) {
 
 		thread work_thread([response, request, &blog] {
@@ -192,7 +194,7 @@ int main(int argc, char* argv[])
 		work_thread.detach();
 	};
 
-	server.resource["^/delete/([a-z,A-Z,0-9]+)$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
+	server.resource["^/delete/" + blog.REGEXNUMBER + "$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
 		shared_ptr<HttpServer::Request> request) {
 
 		thread work_thread([response, request, &blog] {
@@ -208,7 +210,7 @@ int main(int argc, char* argv[])
 		work_thread.detach();
 	};
 
-	server.resource["^/view/([a-z,A-Z,0-9]+)$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
+	server.resource["^/view/" + blog.REGEXNUMBER + "$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
 		shared_ptr<HttpServer::Request> request) {
 
 		try {
@@ -236,7 +238,7 @@ int main(int argc, char* argv[])
 		}
 	};
 
-	server.resource["^/([0-9]+)$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
+	server.resource["^/" + blog.REGEXNUMBER + "$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
 		shared_ptr<HttpServer::Request> request) {
 
 		try {
