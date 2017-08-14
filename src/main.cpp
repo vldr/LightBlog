@@ -63,7 +63,15 @@ int main(int argc, char* argv[])
 
 	BlogSystem blog(DB_HOST, DB_USER, DB_PASS, DB_DB);
 
-
+	server.resource["^/api/find/" + blog.REGEXLETTERSNUMBERS + "$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
+		shared_ptr<HttpServer::Request> request) {
+		thread work_thread([response, request, &blog]
+		{
+			//std::cout << "Sending from db..." << std::endl; 
+			blog.sendPage(request, response, blog.findPost(request->path_match[1]).str());
+		});
+		work_thread.detach();
+	};
 
 	server.resource["^/api/view/" + blog.REGEXNUMBER + "$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
 		shared_ptr<HttpServer::Request> request) {
@@ -163,16 +171,11 @@ int main(int argc, char* argv[])
 
 
 		thread work_thread([response, request, &blog] {
-			if (blog.sessions.find(blog.getSessionCookie(request)) != blog.sessions.end()) {
-				std::pair<string, string> val = blog.sessions[blog.getSessionCookie(request)];
-				if (blog.processLogin(val.first, val.second) == 1) {
-					blog.cache.clear();
-					blog.sendPage(request, response, "<html>Cache cleared...</html>");
-				}
-				else
-					blog.sendPage(request, response, "You need to be logged in to perform this action...");		
+			if (blog.isLoggedIn(request)) {
+				blog.cache.clear();
+				blog.sendPage(request, response, "<html>Cache cleared...</html>");
 			}
-			else 
+			else
 				blog.sendPage(request, response, "You need to be logged in to perform this action...");
 		});
 		work_thread.detach();

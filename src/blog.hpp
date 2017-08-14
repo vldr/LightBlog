@@ -17,6 +17,9 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string.hpp>
 
+#include <boost/regex/pending/unicode_iterator.hpp>
+#include <boost/spirit/include/qi.hpp>
+
 #include <vector>
 #include "sha256.hpp"
 
@@ -39,6 +42,10 @@ public:
 
 	BlogSystem(std::string user, std::string pwd, std::string db, std::string ip);
 
+	std::string getUserIP(shared_ptr<HttpServer::Request> request);
+
+	bool isLoggedIn(shared_ptr<HttpServer::Request> request);
+
 	void sendPage(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response, std::string ss);
 	void sendPage404(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response, std::string ss);
 
@@ -59,6 +66,7 @@ public:
 	std::stringstream getPosts(int page = 0);
 	std::stringstream getPostInformationById(int &reply, std::string id, std::string info);
 	std::stringstream getThisPost(std::string post_id);
+	std::stringstream findPost(std::string searchparam);
 
 	std::string getSessionCookie(shared_ptr<HttpServer::Request> request);
 	int createPost(std::string title, std::string content, std::string author);
@@ -196,9 +204,10 @@ public:
 	}
 	const std::string CACHEHOME = "home";
 	const std::string REGEXNUMBER = "([0-9]{1,9})";
+	const std::string REGEXLETTERSNUMBERS = "([a-z,A-Z,0-9,%]+)";
 
 	std::map<string, string> cache;
-	std::map<string, std::pair<string, string>> sessions;
+	std::map<string, std::tuple<string, string, string>> sessions;
 protected:
 	
 	std::string user_g;
