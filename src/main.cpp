@@ -68,14 +68,14 @@ int main(int argc, char* argv[])
 		if (blog.cache.find(request->path_match[1]) == blog.cache.end()) {
 			thread work_thread([response, request, &blog]
 			{
-				std::cout << "Sending from db..." << std::endl;
+				//std::cout << "Sending from db..." << std::endl;
 				blog.sendPage(request, response, blog.getThisPost(request->path_match[1]).str());
 			});
 			work_thread.detach();
 			
 		}
 		else {
-			std::cout << "Sending from cache..." << std::endl;
+			//std::cout << "Sending from cache..." << std::endl;
 			blog.sendPage(request, response, blog.cache[request->path_match[1]]);
 		}
 	};
@@ -86,13 +86,13 @@ int main(int argc, char* argv[])
 		if (blog.cache.find(blog.CACHEHOME + "0") == blog.cache.end()) {
 			thread work_thread([response, request, &blog]
 			{
-				std::cout << "Sending from db..." << std::endl;
+				//std::cout << "Sending from db..." << std::endl;
 				blog.sendPage(request, response, blog.getPosts().str());
 			});
 			work_thread.detach();
 		}
 		else {
-			std::cout << "Sending from cache..." << std::endl;
+			//std::cout << "Sending from cache..." << std::endl;
 			blog.sendPage(request, response, blog.cache[blog.CACHEHOME + "0"]);
 		}
 	};
@@ -102,13 +102,13 @@ int main(int argc, char* argv[])
 		if (blog.cache.find(blog.CACHEHOME + std::string(request->path_match[1])) == blog.cache.end()) {
 			thread work_thread([response, request, &blog]
 			{
-				std::cout << "Sending from db..." << std::endl;
+				//std::cout << "Sending from db..." << std::endl;
 				blog.sendPage(request, response, blog.getPosts(std::stoi(request->path_match[1])).str());
 			});
 			work_thread.detach();
 		}
 		else {
-			std::cout << "Sending from cache..." << std::endl;
+			//std::cout << "Sending from cache..." << std::endl;
 			blog.sendPage(request, response, blog.cache[blog.CACHEHOME + std::string(request->path_match[1])]);
 		}
 	};
