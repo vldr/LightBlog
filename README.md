@@ -13,6 +13,8 @@ I'm gladly looking for contributions for any bugs, features, et al.
 # Binaries
 ### Windows
 - Requires <a href="https://www.microsoft.com/en-ca/download/details.aspx?id=48145">Visual C++ Redist. 2015</a><br>
+- Requires https://github.com/vldr/LightBlogExpress/raw/master/bin/windowsx64/mysqlcppconn.dll
+<br>
 Usage: `LightBlog.exe DB_HOST DB_USER DB_PASS DB_NAME PORT`
 
 ### macOS Sierra (xcode developer tools required) (boost)
