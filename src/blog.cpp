@@ -774,13 +774,15 @@ std::stringstream BlogSystem::getPosts(int page)
 
 		count = res->rowsCount();
 
-		if ((count - (page * 10)) == count)
-			ss << "<a href=\"/" << (page + 1) << "\"><div class=\"nextButton\">Next</div></a>";
-		else if ((count - (page * 10)) > 10) 
-			ss << "<a href=\"/" << (page - 1) << "\"><div class=\"backButton\">Back</div></a>"
-			   << "<a href=\"/" << (page + 1) << "\"><div class=\"nextButton\">Next</div></a>";
-		else 
-			ss << "<a href=\"/" << (page - 1) << "\"><div class=\"backButton\">Back</div></a>";
+		if (count > 10) {
+			if ((count - (page * 10)) == count)
+				ss << "<a href=\"/" << (page + 1) << "\"><div class=\"nextButton\">Next</div></a>";
+			else if ((count - (page * 10)) > 10)
+				ss << "<a href=\"/" << (page - 1) << "\"><div class=\"backButton\">Back</div></a>"
+				<< "<a href=\"/" << (page + 1) << "\"><div class=\"nextButton\">Next</div></a>";
+			else
+				ss << "<a href=\"/" << (page - 1) << "\"><div class=\"backButton\">Back</div></a>";
+		}
 
 		pstmt->close();
 		con->close();
