@@ -229,9 +229,9 @@ void BlogSystem::processLoginGET(shared_ptr<HttpServer::Request> request, shared
 
 				<form action="login" method="post">
 					Username:<br>
-					<input type="text" id="username" name="username" placeholder=""><br>
+					<input type="text" id="username" name="username" placeholder=""><br><br>
 					Password:<br>
-					<input type="password" id="password" name="password" placeholder=""><br>
+					<input type="password" id="password" name="password" placeholder=""><br><br>
 					<input type="submit" value="Login">
 				</form>
 			</html>
@@ -698,7 +698,6 @@ std::stringstream BlogSystem::parseBlob(istream* blob) {
 	return s;
 }
 
-
 std::stringstream BlogSystem::getPosts()
 {
 	std::stringstream ss;
@@ -729,8 +728,8 @@ std::stringstream BlogSystem::getPosts()
 			pstmt->close();
 			con->close();
 
-			reload = false;
-
+			cache.erase(CACHEHOME);
+			
 			return ss;
 		}
 
@@ -782,8 +781,7 @@ std::stringstream BlogSystem::getPosts()
 		ss << "mysql server failure";
 	}
 
-	ss_posts = ss.str();
-	reload = true;
+	cache[CACHEHOME] = ss.str();
 
 	return ss;
 }
@@ -888,6 +886,8 @@ std::stringstream BlogSystem::getThisPost(std::string post_id)
 			pstmt->close();
 			con->close();
 
+			cache.erase(post_id);
+
 			return ss;
 		}
 
@@ -919,9 +919,6 @@ std::stringstream BlogSystem::getThisPost(std::string post_id)
 				)V0G0N";
 
 				//cout << "[ Using hdd saving item... ]" << std::endl;
-
-				ss_articles[post_id] = ss.str();
-				reload = true;
 			}
 			if (pstmt->getMoreResults())
 			{
@@ -944,6 +941,7 @@ std::stringstream BlogSystem::getThisPost(std::string post_id)
 		ss << "mysql server failure";
 	}
 
+	cache[post_id] = ss.str();
 	return ss;
 }
 
@@ -974,8 +972,6 @@ std::string BlogSystem::getSessionCookie(shared_ptr<HttpServer::Request> request
 
 int BlogSystem::createPost(std::string title, std::string content, std::string author)
 {
-	
-
 	string url(user_g);
 	const string user(pwd_g);
 	const string pass(db_g);
@@ -1007,7 +1003,7 @@ int BlogSystem::createPost(std::string title, std::string content, std::string a
 
 		res.reset(pstmt->executeQuery());
 
-		getPosts();
+		cache.erase(CACHEHOME);
 
 		size_t count = res->rowsCount();
 
@@ -1039,8 +1035,6 @@ int BlogSystem::createPost(std::string title, std::string content, std::string a
 
 int BlogSystem::updatePost(std::string post_id, std::string title, std::string content, std::string author)
 {
-	
-
 	string url(user_g);
 	const string user(pwd_g);
 	const string pass(db_g);
@@ -1076,12 +1070,10 @@ int BlogSystem::updatePost(std::string post_id, std::string title, std::string c
 
 		res.reset(pstmt->executeQuery());
 
-		getThisPost(post_id);
-		getPosts();
+		cache.erase(post_id);
+		cache.erase(CACHEHOME);
 
 		size_t count = res->rowsCount();
-
-
 
 		if (count <= 0) {
 			pstmt->close();
@@ -1133,10 +1125,8 @@ int BlogSystem::deletePost(std::string post_id)
 
 		res.reset(pstmt->executeQuery());
 
-		ss_articles[post_id] = getThisPost(post_id).str();
-
-		reload = false;
-		getPosts();
+		cache.erase(post_id);
+		cache.erase(CACHEHOME);
 
 		size_t count = res->rowsCount();
 

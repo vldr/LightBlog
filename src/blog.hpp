@@ -20,6 +20,9 @@
 #include <vector>
 #include "sha256.hpp"
 
+typedef std::stringstream(*functionGetPost)(std::string);
+typedef std::stringstream(*functionGetHome)();
+
 using namespace std;
 
 typedef HTTPExServer::Server<HTTPExServer::HTTP> HttpServer;
@@ -191,10 +194,9 @@ public:
 		}
 		return newstr;
 	}
+	const std::string CACHEHOME = "home";
 
-	bool reload = false;
-	std::string ss_posts;
-	std::map<string, string> ss_articles;
+	std::map<string, string> cache;
 	std::map<string, std::pair<string, string>> sessions;
 protected:
 	

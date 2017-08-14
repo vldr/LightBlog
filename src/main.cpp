@@ -29,7 +29,6 @@ std::string DB_USER = "root";
 std::string DB_PASS = "";
 std::string DB_DB = "blog";
 
-#define DBG
 
 using namespace std;
 using namespace boost::property_tree;
@@ -37,10 +36,14 @@ using namespace boost::property_tree;
 void default_resource_send(const HttpServer &server, const shared_ptr<HttpServer::Response> &response,
 	const shared_ptr<ifstream> &ifs); 
 
-int main(int argc, char* argv[]) {
-#ifdef DBG
+
+int main(int argc, char* argv[]) 
+{
+
+#ifdef _WIN32
+	system("cls");
+#endif // _WIN32
 	cout << "[ vldr web app - " << __DATE__ << " ]" << std::endl;
-#endif // DBG
 
 	HttpServer server(8080, 1);
 	
@@ -62,49 +65,35 @@ int main(int argc, char* argv[]) {
 
 	server.resource["^/api/view/([a-z,A-Z,0-9]+)$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
 		shared_ptr<HttpServer::Request> request) {
-
-		if (blog.reload) {
-			if (blog.ss_articles.find(request->path_match[1]) == blog.ss_articles.end()) {
-				//cout << "[ Using hdd not found item... ]" << std::endl;
-
-				thread work_thread([response, request, &blog] {
-					stringstream ss = blog.getThisPost(request->path_match[1]);
-					blog.sendPage(request, response, ss.str());
-					blog.reload = true;
-				});
-				work_thread.detach();
-			}
-			else {
-				//cout << "[ Using cache... ]" << std::endl;
-
-				blog.sendPage(request, response, blog.ss_articles[request->path_match[1]]);
-			}
-		}
-		else {
-			thread work_thread([response, request, &blog] {
-				stringstream ss = blog.getThisPost(request->path_match[1]);
-				blog.sendPage(request, response, ss.str()); 
-				blog.reload = true;
+		if (blog.cache.find(request->path_match[1]) == blog.cache.end()) {
+			thread work_thread([response, request, &blog]
+			{
+				//std::cout << "Sending from db..." << std::endl;
+				blog.sendPage(request, response, blog.getThisPost(request->path_match[1]).str());
 			});
 			work_thread.detach();
+			
+		}
+		else {
+			//std::cout << "Sending from cache..." << std::endl;
+			blog.sendPage(request, response, blog.cache[request->path_match[1]]);
 		}
 	};
 
 	server.resource["^/api/home$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
 		shared_ptr<HttpServer::Request> request) {
 
-		if (!blog.reload || blog.ss_posts.length() == 0) {
-			thread work_thread([response, request, &blog] 
+		if (blog.cache.find(blog.CACHEHOME) == blog.cache.end()) {
+			thread work_thread([response, request, &blog]
 			{
-				stringstream ss = blog.getPosts();
-				blog.sendPage(request, response, ss.str());
-				//cout << "[ Using hdd... ]" << std::endl;
+				//std::cout << "Sending from db..." << std::endl;
+				blog.sendPage(request, response, blog.getPosts().str());
 			});
 			work_thread.detach();
 		}
 		else {
-			blog.sendPage(request, response, blog.ss_posts);
-			//cout << "[ Using cache... ]" << std::endl;
+			//std::cout << "Sending from cache..." << std::endl;
+			blog.sendPage(request, response, blog.cache[blog.CACHEHOME]);
 		}
 	};
 
@@ -159,21 +148,14 @@ int main(int argc, char* argv[]) {
 			if (blog.sessions.find(blog.getSessionCookie(request)) != blog.sessions.end()) {
 				std::pair<string, string> val = blog.sessions[blog.getSessionCookie(request)];
 				if (blog.processLogin(val.first, val.second) == 1) {
-					blog.reload = false;
-					blog.ss_articles.clear();
-					blog.ss_posts.clear();
-					blog.sendPage(request, response, "Cache cleared...");
-					return;
+					blog.cache.clear();
+					blog.sendPage(request, response, "<html>Cache cleared...</html>");
 				}
-				else {
-					blog.sendPage(request, response, "You need to be logged in to perform this action...");
-					return;
-				}
+				else
+					blog.sendPage(request, response, "You need to be logged in to perform this action...");		
 			}
-			else {
+			else 
 				blog.sendPage(request, response, "You need to be logged in to perform this action...");
-				return;
-			}
 		});
 		work_thread.detach();
 	};
@@ -275,9 +257,9 @@ int main(int argc, char* argv[]) {
 	thread server_thread([&server]() {
 		server.start();
 	});
-
-	this_thread::sleep_for(chrono::seconds(1));
 	server_thread.join();
+
+	
 	return 0;
 }
 
