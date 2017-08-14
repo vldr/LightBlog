@@ -6,7 +6,7 @@ LightBlog Express is the fastest and most robust blog written in C++ (tested on 
 LightBlogExpress is insanely fast and was able to withstand load of up to ~19953 clients per second using the caching system...
 It is effortless to implement custom themes and modules for the blog system. Successfully compiled on macOS Sierra, Ubuntu 14.04, and Windows 10.
 
-<img src="http://i.imgur.com/l2YqPM4.png" />
+<img src="http://i.imgur.com/PSCLLbr.png" />
 
 # Dependencies
 * Boost C++ libraries
