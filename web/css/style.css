@@ -222,7 +222,6 @@ a:hover{
     padding: 10px;
     background-color: white;
 	margin:5px;
-	
 }
 
 .nextButton a {
@@ -231,6 +230,24 @@ a:hover{
 
 .backButton a {
 	text-decoration:none;
+}
+
+.searchBox {
+	text-align: center;
+	display: inline-block;
+	margin: 0 auto;
+	text-align: center;
+	border-radius: 5px;
+	text-decoration: none;
+	padding: 12px;
+	background-color: white;
+	margin: 5px;
+}
+
+.searchBox input {
+	margin: -2px;
+    border: none;
+    outline: none;
 }
 
 .loader {

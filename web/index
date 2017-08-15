@@ -38,11 +38,12 @@
 							clearTimeout(timer);
 							xmlDoc = xhr.responseXML; 
 							document.getElementById('content').innerHTML = xhr.response;
+							document.getElementById('content').innerHTML += '<div class="searchBox"><input type="text" name="txt" placeholder="Search..." onchange="search(this.value)"></div>';
 						} 
 					}
 				}
 				
-				if (URI[3].length == 0 || URI[3] == 'index')
+				if (URI[3].length == 0)
 					xhr.open('GET', '/api/home');
 				else
 					xhr.open('GET', 'api/home/' + URI[3]);
@@ -53,8 +54,41 @@
 			<br>
 		</div>
 		<br>
-		<div class="footer">
-			<div class="footerContent"><p></p></div>
-		</div>
+		<script>
+		function search(val) {
+			var xhr;
+			var timer; 
+
+			if (window.XMLHttpRequest) 
+				xhr = new XMLHttpRequest(); 
+			else if (window.ActiveXObject) 
+				xhr = new ActiveXObject("Msxml2.XMLHTTP");
+			else 
+				throw new Error("Ajax is not supported by your browser");
+			
+			xhr.onreadystatechange = function () {
+				timer = setTimeout(function() {
+					if (xhr.readyState < 4) {
+						document.getElementById("content").innerHTML = "<br><br><div class=\"loader\"></div>";	
+					}
+				}, 300);
+				
+				if (xhr.readyState === 4) {
+					if (xhr.status == 200 && xhr.status < 300)
+					{
+						clearTimeout(timer);
+						xmlDoc = xhr.responseXML; 
+						
+						document.getElementById('content').innerHTML = '<br><br><div class="searchBox"><input type="text" name="txt" placeholder="Search..." value="' + val + '" onchange="search(this.value)"></div>';
+						document.getElementById('content').innerHTML += xhr.response;
+						window.scrollTo(0, 0);
+					} 
+				}
+			}
+
+			xhr.open('GET', 'api/find/' + val);	
+			xhr.send(null);
+		}
+		</script>
 	</body>
 </html>
