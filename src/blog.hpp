@@ -5,6 +5,7 @@
 #include <iostream>
 #include <sstream>
 #include <map>
+#include <codecvt>
 
 #include <cppconn/driver.h>
 #include <cppconn/exception.h>
@@ -78,19 +79,24 @@ public:
 
 	std::stringstream parseBlob(istream* blob);
 
-	void encode(std::string& data) {
+	void Encode(std::string& data) {
+		wstring_convert<codecvt_utf8<unsigned int>, unsigned int> cv;
+		auto str32 = cv.from_bytes(data);
 		std::string buffer;
-		buffer.reserve(data.size());
-		for (size_t pos = 0; pos != data.size(); ++pos) {
-			switch (data[pos]) {
-			//case '&':  buffer.append("&amp;");       break;
-			case '\"': buffer.append("&quot;");      break;
-			case '\'': buffer.append("&apos;");      break;
-			case '<':  buffer.append("&lt;");        break;
-			case '>':  buffer.append("&gt;");        break;
-			default:   buffer.append(&data[pos], 1); break;
-			}
-		}
+
+		for (auto c : str32)
+			if (uint_least32_t(c) > 127)
+				buffer.append("&#" + std::to_string(uint_least32_t(c)) + ";");
+			else 
+				switch ((char)c) {
+					//case '&':  buffer.append("&amp;");       break;
+					case '\"': buffer.append("&quot;");      break;
+					case '\'': buffer.append("&apos;");      break;
+					case '<':  buffer.append("&lt;");        break;
+					case '>':  buffer.append("&gt;");        break;
+					default: buffer.push_back((char)c);      break;
+				}
+			
 		data.swap(buffer);
 	}
 

@@ -24,6 +24,7 @@
 #include <cstdlib>
 #include <string.h>
 
+
 std::string DB_HOST = "127.0.0.1";
 std::string DB_USER = "root";
 std::string DB_PASS = "";
@@ -67,7 +68,6 @@ int main(int argc, char* argv[])
 		shared_ptr<HttpServer::Request> request) {
 		thread work_thread([response, request, &blog]
 		{
-			//std::cout << "Sending from db..." << std::endl; 
 			blog.sendPage(request, response, blog.findPost(request->path_match[1]).str());
 		});
 		work_thread.detach();

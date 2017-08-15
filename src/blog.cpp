@@ -244,6 +244,7 @@ void BlogSystem::processLoginPOST(shared_ptr<HttpServer::Request> request, share
 		if (key == "username") {
 			std::replace(value.begin(), value.end(), '+', ' ');
 			value = UriDecode(value);
+			Encode(value);
 
 			username = value;
 		}
@@ -251,6 +252,7 @@ void BlogSystem::processLoginPOST(shared_ptr<HttpServer::Request> request, share
 		if (key == "password") {
 			std::replace(value.begin(), value.end(), '+', ' ');
 			value = UriDecode(value);
+			Encode(value);
 
 			password = value;
 		}
@@ -303,15 +305,16 @@ void BlogSystem::processPostPOST(shared_ptr<HttpServer::Request> request, shared
 		if (key == "content") {
 			std::replace(value.begin(), value.end(), '+', ' ');
 			value = UriDecode(value);
-			encode(value);
+			Encode(value);
+
 			con = value;
 		}
 
 		if (key == "title") {
 			std::replace(value.begin(), value.end(), '+', ' ');
 			value = UriDecode(value);
+			Encode(value);
 
-			encode(value);
 			title = value;
 		}
 	}
@@ -423,23 +426,24 @@ void BlogSystem::processEditPOST(shared_ptr<HttpServer::Request> request, shared
 		if (key == "post_id") {
 			std::replace(value.begin(), value.end(), '+', ' ');
 			value = UriDecode(value);
+			Encode(value);
 
 			post_id = value;
 		}
 
 		if (key == "content") {
 			std::replace(value.begin(), value.end(), '+', ' ');
-
 			value = UriDecode(value);
-			encode(value);
+			Encode(value);
+
 			con = value;
 		}
 
 		if (key == "title") {
 			std::replace(value.begin(), value.end(), '+', ' ');
 			value = UriDecode(value);
+			Encode(value);
 
-			encode(value);
 			title = value;
 		}
 	}
@@ -548,6 +552,7 @@ void BlogSystem::processDeletePOST(shared_ptr<HttpServer::Request> request, shar
 		if (key == "post_id") {
 			std::replace(value.begin(), value.end(), '+', ' ');
 			value = UriDecode(value);
+			Encode(value);
 
 			post_id = value;
 		}
@@ -922,6 +927,7 @@ std::stringstream BlogSystem::findPost(std::string value)
 
 	try {
 		value = UriDecode(value);
+		Encode(value);
 
 		sql::Driver * driver = get_driver_instance();
 
@@ -941,7 +947,7 @@ std::stringstream BlogSystem::findPost(std::string value)
 		size_t count = res->rowsCount();
 
 		if (count < 1) {
-			ss << "<br><br><center>Sadly, no post was found.</center>";
+			ss << "<br><br><center>Sadly, no post(s) were found...</center>";
 
 			pstmt->close();
 			con->close();
@@ -964,13 +970,11 @@ std::stringstream BlogSystem::findPost(std::string value)
 				ss << R"V0G0N(
 					<div class="postBox">
 						<div class="postHeader">
-							<span class="postTitleOnPage">)V0G0N" << sk.str() << R"V0G0N(</span>
+							<a class="postTitle" href="view/)V0G0N" << res->getString("id") << "\">" << sk.str() << R"V0G0N(</a>
 							<span class="postDate">)V0G0N" << res->getString("postdate") << R"V0G0N(</span>
 						</div>
 						<div class="postContent"><p style="white-space:pre-wrap;">)V0G0N" << bbCodeParsed << R"V0G0N(</p></div>
 						<div class="postFooter">
-							<!--<a href="../edit/)V0G0N" << res->getString("id") << R"V0G0N("><img class="editPostButton" src="http://www.famfamfam.com/lab/icons/silk/icons/application_edit.png" /></a>
-							<a href="../delete/)V0G0N" << res->getString("id") << R"V0G0N("><img class="editPostButton" src="http://www.famfamfam.com/lab/icons/silk/icons/application_delete.png" /></a>-->
 							<span class="postAuthor">)V0G0N" << res->getString("author") << R"V0G0N(</span>
 						</div>
 					</div>
