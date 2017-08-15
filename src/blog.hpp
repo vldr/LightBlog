@@ -80,7 +80,13 @@ public:
 	std::stringstream parseBlob(istream* blob);
 
 	void Encode(std::string& data) {
+
+#ifdef _WIN32
 		wstring_convert<codecvt_utf8<unsigned int>, unsigned int> cv;
+#else
+		wstring_convert<codecvt_utf8<char32_t>, char32_t> cv;
+#endif // _WIN32
+		
 		auto str32 = cv.from_bytes(data);
 		std::string buffer;
 
