@@ -1298,7 +1298,7 @@ int BlogSystem::processLogin(std::string user_input, std::string pwd_input)
 				copy(pwd.begin(), pwd.end(), dst);
 				dst[pwd.length()] = 0;
 
-				if (libscrypt_check(dst, pwd_input.c_str()))
+				if (libscrypt_check(dst, pwd_input.c_str()) > 0)
 					return 1;
 				else
 					return 0;
