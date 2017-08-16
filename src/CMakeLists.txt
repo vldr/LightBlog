@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 2.8.8)
 project (LightBlog)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -lmysqlclient -ldl -std=c++11")
 
 include_directories(.)
 
@@ -21,21 +21,11 @@ if(APPLE)
     set(OPENSSL_ROOT_DIR "/usr/local/opt/openssl")
 endif()
 
-add_executable(lightblog main.cpp blog.cpp sha256.cpp bbcode/bbcode_lexer.cpp bbcode/bbcode_parser.cpp bbcode/bbcode_utils.cpp)
+add_executable(lightblog main.cpp blog.cpp scrypt/b64.cpp scrypt/crypto_scrypt-check.cpp scrypt/crypto_scrypt-hexconvert.cpp scrypt/crypto_scrypt-nosse.cpp scrypt/crypto-mcf.cpp scrypt/sha256.cpp scrypt/slowequals.cpp bbcode/bbcode_lexer.cpp bbcode/bbcode_parser.cpp bbcode/bbcode_utils.cpp)
 target_link_libraries(lightblog ${Boost_LIBRARIES})
 target_link_libraries(lightblog ${CMAKE_THREAD_LIBS_INIT})
-
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-# ↓ EDIT THE LINES BELOW TO ACCOMMODATE TO YOUR PATH OF THE STATIC OR DYNAMIC MYSQLCONNECTOR. ↓ # 
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-
-target_link_libraries(lightblog ../mysqlconnector/lib/libmysqlcppconn-static.a)
-include_directories(../mysqlconnector/include/)
-
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-# ↑ EDIT THE LINES ABOVE TO ACCOMMODATE TO YOUR PATH OF THE STATIC OR DYNAMIC MYSQLCONNECTOR. ↑ # 
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-
+target_link_libraries(lightblog /root/lightblog/libs/lib/libmysqlcppconn.so)
+include_directories(/root/lightblog/libs/include/)
 
 #TODO: add requirement for version 1.0.1g (can it be done in one line?)
 find_package(OpenSSL)
@@ -50,4 +40,4 @@ endif()
 
 enable_testing()
 
-install(FILES blog.hpp server_http.hpp client_http.hpp sha256.hpp DESTINATION include/simple-web-server)
+install(FILES blog.hpp server_http.hpp client_http.hpp scrypt/b64.h scrypt/crypto_scrypt-hexconvert.h scrypt/libscrypt.h scrypt/sha256.h scrypt/slowequals.h scrypt/sysendian.h DESTINATION include/simple-web-server)

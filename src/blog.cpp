@@ -4,13 +4,15 @@
 #include "bbcode/bbcode_parser.h"
 #include <iterator>
 #include <string>
+#include <ctime>
 
-/**
-	TODO: 
-	- remove namespace...
-	- remove bbcode namespace...
-	- remove all the dodgy code.
-**/
+
+#ifdef _WIN32
+#include <Wincrypt.h>
+#pragma comment(lib, "advapi32.lib")
+#endif
+
+
 using namespace std;
 using namespace bbcode;
 
@@ -55,7 +57,7 @@ bool BlogSystem::isLoggedIn(shared_ptr<HttpServer::Request> request) {
 	if (sessions.find(getSessionCookie(request)) != sessions.end()) {
 		auto val = sessions[getSessionCookie(request)];
 
-		if (processLogin(std::get<0>(val), std::get<1>(val)) != 1 || std::get<2>(val) != getUserIP(request)) {
+		if (std::get<1>(val) != getUserIP(request)) {
 			return false;
 		}
 	}
@@ -221,6 +223,77 @@ void BlogSystem::processLoginGET(shared_ptr<HttpServer::Request> request, shared
 	sendPage(request, response, jj.str());
 }
 
+std::string BlogSystem::generateSalt(int length) {
+#ifdef _WIN32
+	HCRYPTPROV hProvider = 0;
+
+	if (!::CryptAcquireContextW(&hProvider, 0, 0, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT | CRYPT_SILENT))
+	{
+		std::cerr << "[Error at CryptAcquireContextW...]" << std::endl;
+		return "";
+	}
+
+	const DWORD dwLength = 8;
+	BYTE pbBuffer[dwLength] = {};
+
+	if (!::CryptGenRandom(hProvider, dwLength, pbBuffer))
+	{
+		::CryptReleaseContext(hProvider, 0);
+		std::cerr << "[Error at CryptGenRandom...]" << std::endl;
+		return "";
+	}
+
+	uint32_t random_value;
+	memcpy(&random_value, pbBuffer, dwLength);
+
+	if (!::CryptReleaseContext(hProvider, 0)) {
+		std::cerr << "[Error at CryptReleaseContext...]" << std::endl;
+		return "";
+	}
+#else
+	unsigned long long int random_value = 0;
+	size_t size = sizeof(random_value);
+	ifstream urandom("/dev/urandom", ios::in | ios::binary);
+	if (urandom)
+	{
+		urandom.read(reinterpret_cast<char*>(&random_value), size);
+		if (!urandom)
+		{
+			std::cerr << "[Failed to read from /dev/urandom]" << std::endl;
+			urandom.close();
+			return "";
+		}
+		urandom.close();
+	}
+	else
+	{
+		std::cerr << "[Failed to open /dev/urandom]" << std::endl;
+		return "";
+	}
+#endif
+	static auto& chrs = "0123456789"
+		"abcdefghijklmnopqrstuvwxyz"
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+	mersenne_twister_engine<unsigned int, 32, 624, 397,
+		31, 0x9908b0df,
+		11, 0xffffffff,
+		7, 0x9d2c5680,
+		15, 0xefc60000,
+		18, 1812433253> generator(random_value);
+	std::uniform_int_distribution<std::string::size_type> pick(0, sizeof(chrs) - 2);
+
+	std::string random_str;
+
+	random_str.reserve(length);
+
+	while (length--)
+		random_str += chrs[pick(generator)];
+
+	return random_str;
+
+}
+
 void BlogSystem::processLoginPOST(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response)
 {
 	stringstream content;
@@ -259,21 +332,12 @@ void BlogSystem::processLoginPOST(shared_ptr<HttpServer::Request> request, share
 	}
 
 	if (processLogin(username, password) == 1) {
-		//createPost(title, con, username);
+		std::string random_str = generateSalt(32);
+		std::time_t t = std::time(0);
+		sessions.clear();
+		sessions[random_str] = std::make_tuple(username, request->remote_endpoint_address, std::to_string(t));
 
 		content << "<html><head><meta http-equiv=\"refresh\" content=\"0; url=../\" /></head>You've logged in successfully...</html>";
-
-		/*cout << ">> " << request->remote_endpoint_address << ":" <<
-		request->remote_endpoint_port << " has requested (" << request->path << ")...\n";*/
-
-		/*if (password.length() != 64)
-			password = sha256(password);*/
-
-		string random_str = RandomString(32);
-
-		sessions.clear();
-		sessions[random_str] = std::make_tuple(username, password, request->remote_endpoint_address);
-
 		*response << "HTTP/1.1 200 OK\r\nSet-Cookie: vldr_session=" << random_str << ";\r\nSet-Cookie: vldr_scp=" << username
 			<< ";\r\nContent-Length: " << content.str().length() << "\r\n\r\n" << content.str().c_str();
 	}
@@ -572,72 +636,6 @@ void BlogSystem::processDeletePOST(shared_ptr<HttpServer::Request> request, shar
 	}
 }
 
-std::stringstream BlogSystem::getInfo(std::string input)
-{
-	std::stringstream ss;
-
-	string url(user_g);
-	const string user(pwd_g);
-	const string pass(db_g);
-	const string database(ip_g);
-
-	try {
-
-		sql::Driver * driver = get_driver_instance();
-
-		std::auto_ptr< sql::Connection > con(driver->connect(url, user, pass));
-		con->setSchema(database);
-
-		std::auto_ptr< sql::PreparedStatement >  pstmt;
-		std::auto_ptr< sql::ResultSet > res;
-
-		pstmt.reset(con->prepareStatement("SELECT * FROM users WHERE id=?"));
-		pstmt->setString(1, input);
-
-		res.reset(pstmt->executeQuery());
-
-		size_t count = res->rowsCount();
-
-		if (count <= 0) {
-			ss << "User not found!!";
-
-			pstmt->close();
-			con->close();
-			
-			return ss;
-		}
-
-		for (;;)
-		{
-			while (res->next()) {
-				ss << "<html>";
-				ss << "<pre>Username: " << res->getString("username") << "\nPassword: " << res->getString("pass")
-					<< "\nID: " << res->getInt("id") << "</pre>" << endl;
-			}
-			if (pstmt->getMoreResults())
-			{
-				res.reset(pstmt->getResultSet());
-				continue;
-			}
-			break;
-		}
-
-		pstmt->close();
-		con->close();
-
-	}
-	catch (sql::SQLException &e) {
-		cout << "# ERR: SQLException in " << __FILE__;
-		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
-		cout << "# ERR: " << e.what();
-		cout << " (MySQL error code: " << e.getErrorCode();
-		cout << ", SQLState: " << e.getSQLState() << " )" << endl;
-
-		ss << "mysql server failure";
-	}
-
-	return ss;
-}
 
 std::stringstream BlogSystem::parseBlob(istream* blob) {
 	istream* content_parsed = blob;
@@ -1020,9 +1018,6 @@ std::string BlogSystem::getSessionCookie(shared_ptr<HttpServer::Request> request
 				key = strNew.substr(0, positionOfEquals);
 				if (positionOfEquals != string::npos)
 					value = strNew.substr(positionOfEquals + 1);
-				//cout << value.substr(0, 32) << endl;
-
-				//cout << strNew << endl;
 
 				return value.substr(0, 32);
 			}
@@ -1218,10 +1213,47 @@ int BlogSystem::deletePost(std::string post_id)
 	return 0;
 }
 
+
+int BlogSystem::hashPassword(char *dst, const char *passphrase, uint32_t N, uint8_t r, uint8_t p) {
+	int retval;
+	uint8_t salt[SCRYPT_SALT_LEN] = {};
+	uint8_t	hashbuf[SCRYPT_HASH_LEN];
+	char outbuf[256];
+	char saltbuf[256];
+
+	std::string generatedSalt = generateSalt(SCRYPT_SALT_LEN);
+	if (generatedSalt == "")
+	{
+		return 0;
+	}
+
+	copy(generatedSalt.begin(), generatedSalt.end(), salt);
+	salt[generatedSalt.length() - 1] = 0;
+
+	retval = libscrypt_scrypt((const uint8_t*)passphrase, strlen(passphrase),
+		(uint8_t*)salt, SCRYPT_SALT_LEN, N, r, p, hashbuf, sizeof(hashbuf));
+	if (retval == -1)
+		return 0;
+
+	retval = libscrypt_b64_encode((unsigned char*)hashbuf, sizeof(hashbuf),
+		outbuf, sizeof(outbuf));
+	if (retval == -1)
+		return 0;
+
+	retval = libscrypt_b64_encode((unsigned char *)salt, sizeof(salt),
+		saltbuf, sizeof(saltbuf));
+	if (retval == -1)
+		return 0;
+
+	retval = libscrypt_mcf(N, r, p, saltbuf, outbuf, dst);
+	if (retval != 1)
+		return 0;
+
+	return 1;
+}
+
 int BlogSystem::processLogin(std::string user_input, std::string pwd_input)
 {
-	std::stringstream ss;
-
 	string url(user_g);
 	const string user(pwd_g);
 	const string pass(db_g);
@@ -1237,31 +1269,51 @@ int BlogSystem::processLogin(std::string user_input, std::string pwd_input)
 		std::auto_ptr< sql::PreparedStatement >  pstmt;
 		std::auto_ptr< sql::ResultSet > res;
 
-		pstmt.reset(con->prepareStatement("SELECT * FROM users WHERE username=? AND pass=?"));
+		pstmt.reset(con->prepareStatement("SELECT * FROM users WHERE username=?"));
 		pstmt->setString(1, user_input);
-
-		if (pwd_input.length() != 64)
-			pwd_input = sha256(pwd_input);
-
-		pstmt->setString(2, pwd_input);
-
 		res.reset(pstmt->executeQuery());
 
 		size_t count = res->rowsCount();
 
-		if (count <= 0) {
-			ss << "User information is incorrect...";
-
+		if (count != 1) {
 			pstmt->close();
 			con->close();
 
 			return 0;
 		}
-		else {
-			pstmt->close();
-			con->close();
 
-			return 1;
+		for (;;)
+		{
+			while (res->next()) 
+			{
+				/*char finalhh[1024];
+				const char *passphrase = pwd_input.c_str();
+				hashPassword(finalhh, passphrase, SCRYPT_N, SCRYPT_r, SCRYPT_p);
+
+				std::cout << finalhh << std::endl;*/
+
+				char dst[1024];
+				auto pwd = res->getString("pass").asStdString();
+
+				copy(pwd.begin(), pwd.end(), dst);
+				dst[pwd.length()] = 0;
+
+				if (libscrypt_check(dst, pwd_input.c_str()))
+					return 1;
+				else
+					return 0;
+
+				pstmt->close();
+				con->close();
+
+				return 0;
+			}
+			if (pstmt->getMoreResults())
+			{
+				res.reset(pstmt->getResultSet());
+				continue;
+			}
+			break;
 		}
 	}
 	catch (sql::SQLException e) {
@@ -1299,7 +1351,7 @@ std::string BlogSystem::getUserID(std::string user_input, std::string pwd_input)
 		pstmt.reset(con->prepareStatement("SELECT * FROM users WHERE username=? AND pass=?"));
 		pstmt->setString(1, user_input);
 
-		pwd_input = sha256(pwd_input);
+		//pwd_input = sha256(pwd_input);
 		pstmt->setString(2, pwd_input);
 
 		res.reset(pstmt->executeQuery());

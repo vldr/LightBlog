@@ -64,7 +64,7 @@ int main(int argc, char* argv[])
 
 	BlogSystem blog(DB_HOST, DB_USER, DB_PASS, DB_DB);
 
-	server.resource["^/api/find/" + blog.REGEXLETTERSNUMBERS + "$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
+	server.resource["^/api/find/" + blog.REGEXSEARCH + "$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
 		shared_ptr<HttpServer::Request> request) {
 		thread work_thread([response, request, &blog]
 		{

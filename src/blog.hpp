@@ -6,6 +6,7 @@
 #include <sstream>
 #include <map>
 #include <codecvt>
+#include <fstream>
 
 #include <cppconn/driver.h>
 #include <cppconn/exception.h>
@@ -22,7 +23,8 @@
 #include <boost/spirit/include/qi.hpp>
 
 #include <vector>
-#include "sha256.hpp"
+#include "scrypt/libscrypt.h"
+#include "scrypt/b64.h"
 
 typedef std::stringstream(*functionGetPost)(std::string);
 typedef std::stringstream(*functionGetHome)();
@@ -54,6 +56,9 @@ public:
 
 	void processPostGET(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
 	void processLoginGET(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
+
+	std::string generateSalt(int length);
+	
 	void processLoginPOST(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
 	void processPostPOST(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
 
@@ -63,7 +68,6 @@ public:
 	void processDeleteGET(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
 	void processDeletePOST(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
 
-	std::stringstream getInfo(std::string input);
 	std::stringstream getPosts(int page = 0);
 	std::stringstream getPostInformationById(int &reply, std::string id, std::string info);
 	std::stringstream getThisPost(std::string post_id);
@@ -75,12 +79,13 @@ public:
 	int deletePost(std::string post_id);
 	std::string getUserID(std::string user, std::string pwd);
 
+	int hashPassword(char * dst, const char * passphrase, uint32_t N, uint8_t r, uint8_t p);
+
 	int processLogin(std::string user, std::string pwd);
 
 	std::stringstream parseBlob(istream* blob);
 
 	void Encode(std::string& data) {
-
 #ifdef _WIN32
 		wstring_convert<codecvt_utf8<unsigned int>, unsigned int> cv;
 #else
@@ -202,21 +207,9 @@ public:
 		return sResult;
 	}
 
-	string RandomString(int len)
-	{
-		srand(time(0));
-		string str = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-		string newstr;
-		int pos;
-		while (newstr.size() != len) {
-			pos = ((rand() % (str.size() - 1)));
-			newstr += str.substr(pos, 1);
-		}
-		return newstr;
-	}
 	const std::string CACHEHOME = "home";
 	const std::string REGEXNUMBER = "([0-9]{1,9})";
-	const std::string REGEXLETTERSNUMBERS = "([a-z,A-Z,0-9,%]+)";
+	const std::string REGEXSEARCH = "([a-z,A-Z,0-9,%,-,_,.,!,~,*,',(,)]+)";
 
 	std::map<string, string> cache;
 	std::map<string, std::tuple<string, string, string>> sessions;
