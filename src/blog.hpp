@@ -62,6 +62,9 @@ public:
 	void processLoginPOST(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
 	void processPostPOST(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
 
+	void processChangeGET(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
+	void processChangePOST(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
+
 	void processEditGET(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
 	void processEditPOST(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
 
@@ -80,7 +83,7 @@ public:
 	std::string getUserID(std::string user, std::string pwd);
 
 	int hashPassword(char * dst, const char * passphrase, uint32_t N, uint8_t r, uint8_t p);
-
+	void changeUserDetails(std::string user_input, std::string pwd_input, shared_ptr<HttpServer::Request> request);
 	int processLogin(std::string user, std::string pwd);
 
 	std::stringstream parseBlob(istream* blob);

@@ -173,10 +173,28 @@ int main(int argc, char* argv[])
 		thread work_thread([response, request, &blog] {
 			if (blog.isLoggedIn(request)) {
 				blog.cache.clear();
-				blog.sendPage(request, response, "<html>Cache cleared...</html>");
+				blog.sendPage(request, response, "Cache cleared...");
 			}
 			else
 				blog.sendPage(request, response, "You need to be logged in to perform this action...");
+		});
+		work_thread.detach();
+	};
+
+	server.resource["^/change$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
+		shared_ptr<HttpServer::Request> request) {
+
+		thread work_thread([response, request, &blog] {
+			blog.processChangeGET(request, response);
+		});
+		work_thread.detach();
+	};
+
+	server.resource["^/change$"]["POST"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
+		shared_ptr<HttpServer::Request> request) {
+
+		thread work_thread([response, request, &blog] {
+			blog.processChangePOST(request, response);
 		});
 		work_thread.detach();
 	};

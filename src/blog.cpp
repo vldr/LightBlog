@@ -72,10 +72,10 @@ void BlogSystem::sendPage(shared_ptr<HttpServer::Request> request, shared_ptr<Ht
 {
 	if (isLoggedIn(request)) {
 		auto val = sessions[getSessionCookie(request)];
-		ss.append("<span style='text-align: left;font-size:10px; position:fixed; top:10; left:10; padding:10px; color:black; background-color:lightgray; border-radius:5px;'><a href='/logout' style='color:black;text-decoration:underline;'>Welcome, " + std::get<0>(val) + ".</a>"
+		ss.append("<html><span style='text-align: left;font-size:10px; position:fixed; top:10; left:10; text-decoration:none;padding:10px; color:black; background-color:lightgray; border-radius:5px;'><a href='/logout' style='color:black;text-decoration:underline;'>Welcome, " + std::get<0>(val) + ".</a>"
 			+ (request->path_match[0] == std::string("/api/view/") + std::string(request->path_match[1]) ? "<br><hr><a style='color:black;' href='/edit/" + std::string(request->path_match[1]) + "'>Edit</a><br>"
-				+ " <a style='color:black;' href='/delete/" + std::string(request->path_match[1]) + "'>Delete</a><br>" + "<a style='color:black;' href='/post'>New</a>"
-				: "<br><hr><a style='color:black;' href='/post'>New</a>") + "</span>");
+				+ " <a style='color:black;' href='/delete/" + std::string(request->path_match[1]) + "'>Delete</a><br>" + "<a style='color:black;' href='/post'>New</a><br>" + "<a style='color:black;' href='/change'>Change</a>"
+				: "<br><hr><a style='color:black;' href='/post'>New</a><br><a style='color:black;' href='/change'>Change</a>") + "</span></html>");
 	}
 
 	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << ss.length() << "\r\n\r\n" << ss.c_str();
@@ -316,16 +316,16 @@ void BlogSystem::processLoginPOST(shared_ptr<HttpServer::Request> request, share
 
 		if (key == "username") {
 			std::replace(value.begin(), value.end(), '+', ' ');
-			value = UriDecode(value);
-			Encode(value);
+			//value = UriDecode(value);
+			//Encode(value);
 
 			username = value;
 		}
 
 		if (key == "password") {
 			std::replace(value.begin(), value.end(), '+', ' ');
-			value = UriDecode(value);
-			Encode(value);
+			//value = UriDecode(value);
+			//Encode(value);
 
 			password = value;
 		}
@@ -397,6 +397,123 @@ void BlogSystem::processPostPOST(shared_ptr<HttpServer::Request> request, shared
 			<< ";\r\nContent-Length: " << content.str().length() << "\r\n\r\n" << content.str().c_str();
 	}
 }
+
+void BlogSystem::processChangeGET(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response)
+{
+	if (!isLoggedIn(request)) {
+		sendPage(request, response, "You must be logged in to perform this action...");
+		return;
+	}
+
+	std::stringstream jj;
+	auto val = sessions[getSessionCookie(request)];
+
+	jj << R"V0G0N(
+	<html>
+		<head>
+			<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+
+			<style>
+				body {
+					font-family: 'Open Sans',sans-serif;
+				}
+	
+				.topbar {
+					position: absolute !important;
+		
+					right: 0px !important;
+					top:21px !important;
+		
+					width: auto !important;
+					font-size:18px !important;
+					padding-right:40px !important;
+				}
+				.topbar-li {
+					display: inline !important;
+					margin-left:14.5px !important;;
+				}
+				.topbar-li a {
+					color:black !important;
+					text-decoration:underline !important;
+					font-family: 'Open Sans', sans-serif;
+				}
+			</style>
+		</head>
+		<center>
+
+		<div class="topbar">
+			<ul class="topbar-ul">
+				<li class="topbar-li"><a href="../">Return home...</a></li>
+			</ul>
+		</div>
+
+		<form action="change" method="post">	
+			New username (leave it if you wish to keep it):<br>
+			<input type="text" name="user" value=")V0G0N" << std::get<0>(val) << R"V0G0N("><br><br>
+			New password:<br>
+			<input type="password" name="pass" value=""><br><br>
+			<input type="submit" value="Update">
+		</form>
+	</html>
+	)V0G0N";
+
+	sendPage(request, response, jj.str());
+}
+
+void BlogSystem::processChangePOST(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response)
+{
+	stringstream content;
+
+	std::vector<std::string> words;
+	std::string s = request->content.string();
+	boost::split(words, s, boost::is_any_of("&"), boost::token_compress_on);
+
+	std::string newPassword = "";
+	std::string newUsername = "";
+
+	for (string& query : words) {
+		string key;
+		string value;
+
+		size_t positionOfEquals = query.find("=");
+		key = query.substr(0, positionOfEquals);
+		if (positionOfEquals != string::npos)
+			value = query.substr(positionOfEquals + 1);
+
+		if (key == "pass") {
+			std::replace(value.begin(), value.end(), '+', ' ');
+			//value = UriDecode(value);
+
+			newPassword = value;
+		}
+
+		if (key == "user") {
+			std::replace(value.begin(), value.end(), '+', ' ');
+			//value = UriDecode(value);
+
+			newUsername = value;
+		}
+	}
+
+	if (!isLoggedIn(request)) {
+		sendPage(request, response, "You must be logged in to perform this action...");
+		return;
+	}
+	else {
+		if (newPassword.empty() || newUsername.empty()) {
+			sendPage(request, response, "Username or password cannot be empty...");
+			return;
+		}
+		else
+			changeUserDetails(newUsername, newPassword, request);
+
+		content << "<html><head><meta http-equiv=\"refresh\" content=\"0; url=../\" /></head>OK posted...</html>";
+
+		*response << "HTTP/1.1 200 OK\r\nSet-Cookie: user=" << "ftyftyf" << ";\r\nSet-Cookie: pass=" << "juhiuh87"
+			<< ";\r\nContent-Length: " << content.str().length() << "\r\n\r\n" << content.str().c_str();
+	}
+}
+
 
 void BlogSystem::processEditGET(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response)
 {
@@ -1251,6 +1368,47 @@ int BlogSystem::hashPassword(char *dst, const char *passphrase, uint32_t N, uint
 
 	return 1;
 }
+
+void BlogSystem::changeUserDetails(std::string user_input, std::string pwd_input, shared_ptr<HttpServer::Request> request)
+{
+	string url(user_g);
+	const string user(pwd_g);
+	const string pass(db_g);
+	const string database(ip_g);
+
+	try {
+		char finalPassword[1024];
+		const char *passphrase = pwd_input.c_str();
+		auto val = sessions[getSessionCookie(request)];
+		hashPassword(finalPassword, passphrase, SCRYPT_N, SCRYPT_r, SCRYPT_p);
+
+		sql::Driver * driver = get_driver_instance();
+
+		std::auto_ptr< sql::Connection > con(driver->connect(url, user, pass));
+		con->setSchema(database);
+
+		std::auto_ptr< sql::PreparedStatement >  pstmt;
+		std::auto_ptr< sql::ResultSet > res;
+
+		pstmt.reset(con->prepareStatement("UPDATE users SET username=?, pass=? WHERE username=?"));
+
+		pstmt->setString(1, user_input);
+		pstmt->setString(2, finalPassword);
+		pstmt->setString(3, std::get<0>(val));
+
+		sessions.clear();
+		
+		res.reset(pstmt->executeQuery());
+	}
+	catch (sql::SQLException e) {
+		cout << "# ERR: SQLException in " << __FILE__;
+		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
+		cout << "# ERR: " << e.what();
+		cout << " (MySQL error code: " << e.getErrorCode();
+		cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+	}
+}
+
 
 int BlogSystem::processLogin(std::string user_input, std::string pwd_input)
 {
