@@ -5,6 +5,12 @@ LightBlog Express is a very fast, and light weight blog written in C++. The proj
 
 I'm gladly looking for contributions for any bugs, features, et al.
 
+# Images
+<img src="http://i.imgur.com/FmlGIFC.png" />
+
+# Demo 
+http://blog.vldr.org/
+
 # Dependencies
 * Boost C++ libraries
 * OpenSSL libraries (if you wish to use HTTPS, you will need to implement it yourself).
@@ -45,16 +51,9 @@ sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 60 --slave 
 7. `./lightblog.ubuntu1404x64 DB_HOST DB_USER DB_PASS DB_NAME PORT`
 
 # Database
-LightBlogExpress uses <b>MySQL</b>, and uses <b>SHA256</b> hashing for passwords.
+LightBlogExpress uses <b>MySQL</b>, and uses scrypt hashing for passwords.
 
-Default username and password is:
-
+Login to change username and pasword; default username and password is:
 `vlad` and `test`
-
-# Images
-<img src="http://i.imgur.com/FmlGIFC.png" />
-
-# Demo 
-http://blog.vldr.org/
 
 
