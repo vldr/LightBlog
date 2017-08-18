@@ -3,6 +3,10 @@
 		<title>LightBlog - Home</title>
 		<link href="css/style.css" rel="stylesheet" media="screen">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
+		
+		<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.form/4.2.2/jquery.form.min.js"></script>
+		<script src="js/essentials.js"></script>
 	</head>
 	<body>
 		<div class="header">
@@ -13,82 +17,12 @@
 
 		<div class="content" id="content">
 			<!-- Start Posts -->
-			<script>
-				var URI = document.URL.split('/');	
-				var xhr;
-				var timer; 
-
-				if (window.XMLHttpRequest) 
-					xhr = new XMLHttpRequest(); 
-				else if (window.ActiveXObject) 
-					xhr = new ActiveXObject("Msxml2.XMLHTTP");
-				else 
-					throw new Error("Ajax is not supported by your browser");
-				
-				xhr.onreadystatechange = function () {
-					timer = setTimeout(function() {
-						if (xhr.readyState < 4) {
-							document.getElementById("content").innerHTML = "<br><br><div class=\"loader\"></div>";	
-						}
-					}, 300);
-					
-					if (xhr.readyState === 4) {
-						if (xhr.status == 200 && xhr.status < 300)
-						{
-							clearTimeout(timer);
-							xmlDoc = xhr.responseXML; 
-							document.getElementById('content').innerHTML = xhr.response;
-							document.getElementById('content').innerHTML += '<div class="searchBox"><input type="text" name="txt" placeholder="Search..." onchange="search(this.value)"></div>';
-						} 
-					}
-				}
-				
-				if (URI[3].length == 0 || URI[3] == 'index')
-					xhr.open('GET', '/api/home');
-				else
-					xhr.open('GET', 'api/home/' + URI[3]);
-					
-				xhr.send(null);
-			</script>
+			<script>loadPosts();</script>
 			<!-- End Posts -->
 			<br>
 		</div>
 		<br>
-		<script>
-		function search(val) {
-			var xhr;
-			var timer; 
-
-			if (window.XMLHttpRequest) 
-				xhr = new XMLHttpRequest(); 
-			else if (window.ActiveXObject) 
-				xhr = new ActiveXObject("Msxml2.XMLHTTP");
-			else 
-				throw new Error("Ajax is not supported by your browser");
-			
-			xhr.onreadystatechange = function () {
-				timer = setTimeout(function() {
-					if (xhr.readyState < 4) {
-						document.getElementById("content").innerHTML = "<br><br><div class=\"loader\"></div>";	
-					}
-				}, 300);
-				
-				if (xhr.readyState === 4) {
-					if (xhr.status == 200 && xhr.status < 300)
-					{
-						clearTimeout(timer);
-						xmlDoc = xhr.responseXML; 
-						
-						document.getElementById('content').innerHTML = '<br><br><div class="searchBox"><input type="text" name="txt" placeholder="Search..." value="' + val + '" onchange="search(this.value)"></div>';
-						document.getElementById('content').innerHTML += xhr.response;
-						window.scrollTo(0, 0);
-					} 
-				}
-			}
-
-			xhr.open('GET', 'api/find/' + val);	
-			xhr.send(null);
-		}
-		</script>
+		
+		<!--  -->
 	</body>
 </html>
