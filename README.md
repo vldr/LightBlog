@@ -6,7 +6,7 @@ LightBlog Express is a very fast, and light weight blog written in C++. The proj
 I'm gladly looking for contributions for any bugs, features, et al.
 
 # Images
-<img src="http://i.imgur.com/FmlGIFC.png" />
+<img src="http://i.imgur.com/O2mPMCJ.gif" />
 
 # Demo 
 http://blog.vldr.org/
