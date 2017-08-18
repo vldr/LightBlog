@@ -47,69 +47,98 @@ public:
 
 	std::string getUserIP(shared_ptr<HttpServer::Request> request);
 
+	void clearSessions();
+
 	bool isLoggedIn(shared_ptr<HttpServer::Request> request);
+
+	void loggout(std::string username);
+
+	std::string createSession(std::string username, shared_ptr<HttpServer::Request> request);
 
 	void sendPage(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response, std::string ss);
 	void sendPage404(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response, std::string ss);
 
 	void processLogoutGET(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
-
-	void processPostGET(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
 	void processLoginGET(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
 
 	std::string generateSalt(int length);
 	
 	void processLoginPOST(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
 	void processPostPOST(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
-
-	void processChangeGET(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
 	void processChangePOST(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
-
-	void processEditGET(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
 	void processEditPOST(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
-
-	void processDeleteGET(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
 	void processDeletePOST(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
 
-	std::stringstream getPosts(int page = 0);
-	std::stringstream getPostInformationById(int &reply, std::string id, std::string info);
-	std::stringstream getThisPost(std::string post_id);
-	std::stringstream findPost(std::string searchparam);
+	std::stringstream getPosts(shared_ptr<HttpServer::Request> rq, int page = 0);
+	std::stringstream getPostInformationById(std::string post_id, std::string info);
+	void addControlsGeneral(shared_ptr<HttpServer::Request> request, std::stringstream & ss);
+	void addControlsView(shared_ptr<HttpServer::Request> request, std::stringstream & ss, std::string post_id);
+	std::stringstream getThisPost(shared_ptr<HttpServer::Request> request, std::string post_id);
+	std::stringstream findPost(shared_ptr<HttpServer::Request> request, std::string searchparam);
 
 	std::string getSessionCookie(shared_ptr<HttpServer::Request> request);
 	int createPost(std::string title, std::string content, std::string author);
 	int updatePost(std::string post_id, std::string title, std::string content, std::string author);
 	int deletePost(std::string post_id);
-	std::string getUserID(std::string user, std::string pwd);
 
 	int hashPassword(char * dst, const char * passphrase, uint32_t N, uint8_t r, uint8_t p);
 	void changeUserDetails(std::string user_input, std::string pwd_input, shared_ptr<HttpServer::Request> request);
 	int processLogin(std::string user, std::string pwd);
 
+	int getUserID(std::string user_input);
+
 	std::stringstream parseBlob(istream* blob);
 
 	void Encode(std::string& data) {
-#ifdef _WIN32
-		wstring_convert<codecvt_utf8<unsigned int>, unsigned int> cv;
-#else
-		wstring_convert<codecvt_utf8<char32_t>, char32_t> cv;
-#endif // _WIN32
-		
-		auto str32 = cv.from_bytes(data);
 		std::string buffer;
+#ifdef _WIN32
+			int wchars_num = MultiByteToWideChar(CP_UTF8, 0, data.c_str(), -1, NULL, 0);
+			wchar_t* wstr = new wchar_t[wchars_num];
+			MultiByteToWideChar(CP_UTF8, 0, data.c_str(), -1, wstr, wchars_num);
 
-		for (auto c : str32)
-			if (uint_least32_t(c) > 127)
-				buffer.append("&#" + std::to_string(uint_least32_t(c)) + ";");
-			else 
-				switch ((char)c) {
-					//case '&':  buffer.append("&amp;");       break;
-					case '\"': buffer.append("&quot;");      break;
-					case '\'': buffer.append("&apos;");      break;
-					case '<':  buffer.append("&lt;");        break;
-					case '>':  buffer.append("&gt;");        break;
-					default: buffer.push_back((char)c);      break;
-				}
+			std::wstring ansl(wstr);
+
+			for (auto c : ansl) {
+				if (uint_least32_t(c) > 127)
+					buffer.append("&#" + std::to_string(uint_least32_t(c)) + ";");
+				else
+					switch ((char)c) {
+						//case '&':  buffer.append("&amp;");       break;
+						case '\"': buffer.append("&quot;");      break;
+						case '\'': buffer.append("&apos;");      break;
+						case '<':  buffer.append("&lt;");        break;
+						case '>':  buffer.append("&gt;");        break;
+						default: buffer.push_back((char)c);      break;
+					}
+			}
+
+#else
+		try {
+			wstring_convert<codecvt_utf8<char32_t>, char32_t> cv;
+
+			auto str32 = cv.from_bytes(data);
+
+			for (auto c : str32)
+				if (uint_least32_t(c) > 127)
+					buffer.append("&#" + std::to_string(uint_least32_t(c)) + ";");
+				else
+					switch ((char)c) {
+						//case '&':  buffer.append("&amp;");       break;
+						case '\"': buffer.append("&quot;");      break;
+						case '\'': buffer.append("&apos;");      break;
+						case '<':  buffer.append("&lt;");        break;
+						case '>':  buffer.append("&gt;");        break;
+						default: buffer.push_back((char)c);      break;
+					}
+		}
+		catch (const std::range_error & exception)
+		{
+			std::cerr << "Error while encoding..." << std::endl;
+		}
+#endif // _WIN32
+
+			
+		
 			
 		data.swap(buffer);
 	}
@@ -171,6 +200,7 @@ public:
 
 		std::string sResult(pStart, pEnd);
 		delete[] pStart;
+
 		return sResult;
 	}
 
@@ -213,9 +243,10 @@ public:
 	const std::string CACHEHOME = "home";
 	const std::string REGEXNUMBER = "([0-9]{1,9})";
 	const std::string REGEXSEARCH = "([a-z,A-Z,0-9,%,-,_,.,!,~,*,',(,)]+)";
+	const time_t SESSIONEXPIRETIME = 300;
 
 	std::map<string, string> cache;
-	std::map<string, std::tuple<string, string, string>> sessions;
+	std::map<string, std::tuple<string, string, time_t>> sessions;
 protected:
 	
 	std::string user_g;

@@ -29,7 +29,7 @@ std::string DB_HOST = "127.0.0.1";
 std::string DB_USER = "root";
 std::string DB_PASS = "";
 std::string DB_DB = "blog";
-
+#define THROW(exceptionClass, message) throw exceptionClass(__FILE__, __LINE__, (message) )
 
 using namespace std;
 using namespace boost::property_tree;
@@ -68,18 +68,18 @@ int main(int argc, char* argv[])
 		shared_ptr<HttpServer::Request> request) {
 		thread work_thread([response, request, &blog]
 		{
-			blog.sendPage(request, response, blog.findPost(request->path_match[1]).str());
+			blog.sendPage(request, response, blog.findPost(request, request->path_match[1]).str());
 		});
 		work_thread.detach();
 	};
 
 	server.resource["^/api/view/" + blog.REGEXNUMBER + "$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
 		shared_ptr<HttpServer::Request> request) {
-		if (blog.cache.find(request->path_match[1]) == blog.cache.end()) {
+		if (blog.cache.find(request->path_match[1]) == blog.cache.end() || blog.isLoggedIn(request)) {
 			thread work_thread([response, request, &blog]
 			{
 				//std::cout << "Sending from db..." << std::endl;
-				blog.sendPage(request, response, blog.getThisPost(request->path_match[1]).str());
+				blog.sendPage(request, response, blog.getThisPost(request, request->path_match[1]).str());
 			});
 			work_thread.detach();
 			
@@ -93,11 +93,11 @@ int main(int argc, char* argv[])
 	server.resource["^/api/home$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
 		shared_ptr<HttpServer::Request> request) {
 
-		if (blog.cache.find(blog.CACHEHOME + "0") == blog.cache.end()) {
+		if (blog.cache.find(blog.CACHEHOME + "0") == blog.cache.end() || blog.isLoggedIn(request)) {
 			thread work_thread([response, request, &blog]
 			{
 				//std::cout << "Sending from db..." << std::endl;
-				blog.sendPage(request, response, blog.getPosts().str());
+				blog.sendPage(request, response, blog.getPosts(request).str());
 			});
 			work_thread.detach();
 		}
@@ -109,30 +109,22 @@ int main(int argc, char* argv[])
 
 	server.resource["^/api/home/" + blog.REGEXNUMBER + "$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
 		shared_ptr<HttpServer::Request> request) {
-		if (blog.cache.find(blog.CACHEHOME + std::string(request->path_match[1])) == blog.cache.end()) {
+		if (blog.cache.find(blog.CACHEHOME + std::string(request->path_match[1])) == blog.cache.end() || blog.isLoggedIn(request)) {
 			thread work_thread([response, request, &blog]
 			{
 				//std::cout << "Sending from db..." << std::endl;
-				blog.sendPage(request, response, blog.getPosts(std::stoi(request->path_match[1])).str());
+				blog.sendPage(request, response, blog.getPosts(request, std::stoi(request->path_match[1])).str());
 			});
 			work_thread.detach();
 		}
 		else {
 			//std::cout << "Sending from cache..." << std::endl;
 			blog.sendPage(request, response, blog.cache[blog.CACHEHOME + std::string(request->path_match[1])]);
+
 		}
 	};
 
-	server.resource["^/post$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
-		shared_ptr<HttpServer::Request> request) {
-
-		thread work_thread([response, request, &blog] {
-			blog.processPostGET(request, response);
-		});
-		work_thread.detach();
-	};
-
-	server.resource["^/post$"]["POST"] = [&blog](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+	server.resource["^/api/post$"]["POST"] = [&blog](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		thread work_thread([response, request, &blog] {
 			blog.processPostPOST(request, response);
 		});
@@ -169,7 +161,6 @@ int main(int argc, char* argv[])
 	server.resource["^/reload$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
 		shared_ptr<HttpServer::Request> request) {
 
-
 		thread work_thread([response, request, &blog] {
 			if (blog.isLoggedIn(request)) {
 				blog.cache.clear();
@@ -177,15 +168,6 @@ int main(int argc, char* argv[])
 			}
 			else
 				blog.sendPage(request, response, "You need to be logged in to perform this action...");
-		});
-		work_thread.detach();
-	};
-
-	server.resource["^/change$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
-		shared_ptr<HttpServer::Request> request) {
-
-		thread work_thread([response, request, &blog] {
-			blog.processChangeGET(request, response);
 		});
 		work_thread.detach();
 	};
@@ -199,27 +181,10 @@ int main(int argc, char* argv[])
 		work_thread.detach();
 	};
 
-	server.resource["^/edit/" + blog.REGEXNUMBER + "$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
-		shared_ptr<HttpServer::Request> request) {
-
-		thread work_thread([response, request, &blog] {
-			blog.processEditGET(request, response);
-		});
-		work_thread.detach();
-	};
 
 	server.resource["^/edit$"]["POST"] = [&blog](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
 		thread work_thread([response, request, &blog] {
 			blog.processEditPOST(request, response);
-		});
-		work_thread.detach();
-	};
-
-	server.resource["^/delete/" + blog.REGEXNUMBER + "$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
-		shared_ptr<HttpServer::Request> request) {
-
-		thread work_thread([response, request, &blog] {
-			blog.processDeleteGET(request, response);
 		});
 		work_thread.detach();
 	};
@@ -326,12 +291,13 @@ int main(int argc, char* argv[])
 	});
 	server_thread.join();
 
-	
+	 
 	return 0;
 }
 
 void default_resource_send(const HttpServer &server, const shared_ptr<HttpServer::Response> &response, const shared_ptr<ifstream> &ifs) {
-	vector<char> buffer(131072);
+	int KB128 = 131072;
+	vector<char> buffer(KB128 * 32);
 	streamsize read_length;
 	if ( ( read_length = ifs->read(&buffer[0], buffer.size()).gcount() ) > 0) {
 		response->write(&buffer[0], read_length);
