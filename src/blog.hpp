@@ -47,6 +47,8 @@ public:
 
 	std::string getUserIP(shared_ptr<HttpServer::Request> request);
 
+	void clearSessions();
+
 	bool isLoggedIn(shared_ptr<HttpServer::Request> request);
 
 	void loggout(std::string username);
@@ -57,28 +59,22 @@ public:
 	void sendPage404(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response, std::string ss);
 
 	void processLogoutGET(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
-
-	void processPostGET(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
 	void processLoginGET(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
 
 	std::string generateSalt(int length);
 	
 	void processLoginPOST(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
 	void processPostPOST(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
-
-	void processChangeGET(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
 	void processChangePOST(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
-
-	void processEditGET(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
 	void processEditPOST(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
-
-	void processDeleteGET(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
 	void processDeletePOST(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
 
-	std::stringstream getPosts(int page = 0);
-	std::stringstream getPostInformationById(int &reply, std::string id, std::string info);
-	std::stringstream getThisPost(std::string post_id);
-	std::stringstream findPost(std::string searchparam);
+	std::stringstream getPosts(shared_ptr<HttpServer::Request> rq, int page = 0);
+	std::stringstream getPostInformationById(std::string post_id, std::string info);
+	void addControlsGeneral(shared_ptr<HttpServer::Request> request, std::stringstream & ss);
+	void addControlsView(shared_ptr<HttpServer::Request> request, std::stringstream & ss, std::string post_id);
+	std::stringstream getThisPost(shared_ptr<HttpServer::Request> request, std::string post_id);
+	std::stringstream findPost(shared_ptr<HttpServer::Request> request, std::string searchparam);
 
 	std::string getSessionCookie(shared_ptr<HttpServer::Request> request);
 	int createPost(std::string title, std::string content, std::string author);
@@ -247,10 +243,10 @@ public:
 	const std::string CACHEHOME = "home";
 	const std::string REGEXNUMBER = "([0-9]{1,9})";
 	const std::string REGEXSEARCH = "([a-z,A-Z,0-9,%,-,_,.,!,~,*,',(,)]+)";
-	const int SESSIONEXPIRETIME = 360;
+	const time_t SESSIONEXPIRETIME = 300;
 
 	std::map<string, string> cache;
-	std::map<string, std::tuple<string, string, string>> sessions;
+	std::map<string, std::tuple<string, string, time_t>> sessions;
 protected:
 	
 	std::string user_g;
