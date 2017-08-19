@@ -23,7 +23,7 @@ a:hover{
 	font-weight:400;
 }
 
-/** UPDATE v0.3 **/
+/* UPDATE V0.3 */
 .settings-modal ul {
 	list-style-type: none;
 	margin: 0;
@@ -100,7 +100,7 @@ a:hover{
     height: 100%; 
 	overflow: auto;
 	
-	background-color: #313131;
+	background-color: rgba(49, 49, 49, 0.95);
 	
 	-webkit-animation-name: zoom;
     -webkit-animation-duration: 0.3s;
@@ -145,6 +145,31 @@ a:hover{
     display:none;
 }
 
+::-webkit-scrollbar {
+    width: 5px;
+}
+ 
+::-webkit-scrollbar-track {
+    -webkit-border-radius: 10px;
+    border-radius: 10px;
+}
+ 
+::-webkit-scrollbar-thumb {
+    -webkit-border-radius: 5px;
+    border-radius: 5px;
+    background: rgba(0,0,0,0.2); 
+}
+
+::-webkit-resizer {
+  background-color: #383838;
+  outline:0;
+}
+
+::-webkit-scrollbar-corner  {
+  background-color: #383838;
+  outline:0;
+}
+
 .settings-modal-open { 
 	position: fixed;
     top: 15px;
@@ -187,6 +212,25 @@ a:hover{
 	background-color:white;
     text-decoration: none;
     cursor: pointer;
+}
+
+@media only screen and (max-width: 700px){
+    .settings-modal-left {
+        width: 100%;
+    }
+	
+	.settings-modal-right {
+        width: 100%;
+    }
+	
+	.settings-modal li a {
+		float:left;
+		margin:0;
+	}
+	
+	.settings-modal ul {
+		margin:0 auto;
+	}
 }
 
 #close {

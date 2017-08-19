@@ -3,6 +3,76 @@ function openTab(evt, name) {
 	$('#tab-' + name).show();
 }
 
+function dryMouth() {
+	$("#create-post").submit(function(e) {
+		$.ajax({
+			type: "POST",
+			url: "/api/post",
+			data: $("#create-post").serialize(),
+			success: function(data)
+			{
+				if (data != "Done...")
+					alert(data);
+				else
+					location.reload();
+			}
+		});
+
+		e.preventDefault();
+	});
+	
+	$("#change-post").submit(function(e) {
+		$.ajax({
+			type: "POST",
+			url: "/change",
+			data: $("#change-post").serialize(),
+			success: function(data)
+			{
+				if (data != "Done...")
+					alert(data);
+				else
+					location.reload();
+			}
+		});
+
+		e.preventDefault();
+	});	
+	
+	$("#edit-post").submit(function(e) {
+		$.ajax({
+			type: "POST",
+			url: "/edit",
+			data: $("#edit-post").serialize(),
+			success: function(data)
+			{
+				if (data != "Done...")
+					alert(data);
+				else
+					location.reload();
+			}
+		});
+
+		e.preventDefault();
+	});	
+	
+	$("#delete-post").submit(function(e) {
+		$.ajax({
+			type: "POST",
+			url: "/delete",
+			data: $("#delete-post").serialize(),
+			success: function(data)
+			{
+				if (data != "Done...")
+					alert(data);
+				else
+					window.location.replace("/index");
+			}
+		});
+
+		e.preventDefault();
+	});
+}
+
 function loadPosts() {
 	var URI = document.URL.split('/');	
 	var xhr;
@@ -29,70 +99,7 @@ function loadPosts() {
 				xmlDoc = xhr.responseXML; 
 				document.getElementById('content').innerHTML = xhr.response;
 				document.getElementById('content').innerHTML += '<div class="searchBox"><input type="text" name="txt" placeholder="Search..." onchange="search(this.value)"></div>';
-				
-				$("#create-post").submit(function(e) {
-					$.ajax({
-						type: "POST",
-						url: "/api/post",
-						data: $("#create-post").serialize(),
-						success: function(data)
-						{
-							if (data != "Done...")
-								alert(data);
-							loadPosts();
-						}
-					});
-
-					e.preventDefault();
-				});
-				
-				$("#change-post").submit(function(e) {
-					$.ajax({
-						type: "POST",
-						url: "/change",
-						data: $("#change-post").serialize(),
-						success: function(data)
-						{
-							if (data != "Done...")
-								alert(data);
-							location.reload();
-						}
-					});
-
-					e.preventDefault();
-				});	
-				
-				$("#edit-post").submit(function(e) {
-					$.ajax({
-						type: "POST",
-						url: "/edit",
-						data: $("#edit-post").serialize(),
-						success: function(data)
-						{
-							if (data != "Done...")
-								alert(data);
-							location.reload();
-						}
-					});
-
-					e.preventDefault();
-				});	
-				
-				$("#delete-post").submit(function(e) {
-					$.ajax({
-						type: "POST",
-						url: "/delete",
-						data: $("#edit-post").serialize(),
-						success: function(data)
-						{
-							if (data != "Done...")
-								alert(data);
-							location.reload();
-						}
-					});
-
-					e.preventDefault();
-				});
+				dryMouth();
 			} 
 		}
 	}
@@ -131,69 +138,7 @@ function loadThisPost() {
 				xmlDoc = xhr.responseXML; 
 				document.getElementById('content').innerHTML = xhr.response;
 				
-				$("#create-post").submit(function(e) {
-					$.ajax({
-						type: "POST",
-						url: "/api/post",
-						data: $("#create-post").serialize(),
-						success: function(data)
-						{
-							if (data != "Done...")
-								alert(data);
-							loadPosts();
-						}
-					});
-
-					e.preventDefault();
-				});
-				
-				$("#change-post").submit(function(e) {
-					$.ajax({
-						type: "POST",
-						url: "/change",
-						data: $("#change-post").serialize(),
-						success: function(data)
-						{
-							if (data != "Done...")
-								alert(data);
-							location.reload();
-						}
-					});
-
-					e.preventDefault();
-				});	
-				
-				$("#edit-post").submit(function(e) {
-					$.ajax({
-						type: "POST",
-						url: "/edit",
-						data: $("#edit-post").serialize(),
-						success: function(data)
-						{
-							if (data != "Done...")
-								alert(data);
-							location.reload();
-						}
-					});
-
-					e.preventDefault();
-				});	
-				
-				$("#delete-post").submit(function(e) {
-					$.ajax({
-						type: "POST",
-						url: "/delete",
-						data: $("#edit-post").serialize(),
-						success: function(data)
-						{
-							if (data != "Done...")
-								alert(data);
-							location.reload();
-						}
-					});
-
-					e.preventDefault();
-				});
+				dryMouth();
 			} 
 		}
 	}
