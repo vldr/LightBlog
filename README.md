@@ -1,6 +1,6 @@
 <img src="http://i.imgur.com/1HMmEwX.png" />
 
-# LightBlogExpress
+# LightBlog
 LightBlog Express is a very fast, and light weight blog written in C++. The project is based off of (https://github.com/vldr/LightBlog) and (https://github.com/eidheim/Simple-Web-Server). Successfully compiled on macOS Sierra, Ubuntu 14.04, and Windows 10.
 
 I'm gladly looking for contributions for any bugs, features, et al.
