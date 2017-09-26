@@ -38,4 +38,4 @@ endif()
 
 enable_testing()
 
-install(FILES blog.hpp server_http.hpp client_http.hpp scrypt/b64.h scrypt/crypto_scrypt-hexconvert.h scrypt/libscrypt.h scrypt/sha256.h scrypt/slowequals.h scrypt/sysendian.h DESTINATION include/simple-web-server)
+install(FILES blog.hpp sqlite_modern_cpp/lists/error_codes.h sqlite_modern_cpp/utility/variant.h sqlite_modern_cpp/utility/uncaught_exceptions.h sqlite_modern_cpp/utility/function_traits.h sqlite_modern_cpp.h sqlite3.h sqlite_modern_cpp/sqlcipher.h sqlite_modern_cpp/log.h sqlite_modern_cpp/errors.h server_http.hpp client_http.hpp scrypt/b64.h scrypt/crypto_scrypt-hexconvert.h scrypt/libscrypt.h scrypt/sha256.h scrypt/slowequals.h scrypt/sysendian.h DESTINATION include/simple-web-server)
