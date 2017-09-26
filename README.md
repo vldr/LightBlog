@@ -19,6 +19,7 @@ http://blog.vldr.org/
 ### Windows
 - Requires <a href="https://www.microsoft.com/en-ca/download/details.aspx?id=48145">Visual C++ Redist. 2015</a><br>
 - Requires <a href="https://go.microsoft.com/fwlink/?LinkId=746572">Visual C++ Redist. 2017</a><br>
+- Requires https://github.com/vldr/LightBlog/raw/master/sql/sql.db
 
 Usage: `LightBlog.exe DBFILENAME PORT`
 
