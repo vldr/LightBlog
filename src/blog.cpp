@@ -1,12 +1,11 @@
 #include "blog.hpp"
+#include "sqlite_modern_cpp.h"
+#include "bbcode/bbcode_parser.h"
 
 #include <sstream>
-#include "bbcode/bbcode_parser.h"
 #include <iterator>
 #include <string>
 #include <ctime>
-
-
 #ifdef _WIN32
 #include <Wincrypt.h>
 #pragma comment(lib, "advapi32.lib")
@@ -16,26 +15,42 @@
 using namespace std;
 using namespace bbcode;
 
-BlogSystem::BlogSystem(std::string user, std::string pwd, std::string db, std::string ip)
+BlogSystem::BlogSystem(std::string filename)
 {
-	user_g = user;
+	/*user_g = user;
 	pwd_g = pwd;
 	db_g = db;
-	ip_g = ip;
-
+	ip_g = ip;*/
 	try {
-		sql::Driver * driver = get_driver_instance();
+		/*sql::Driver * driver = get_driver_instance();
 
 		std::auto_ptr< sql::Connection > con(driver->connect(user_g, pwd_g, db_g));
 		con->setSchema(ip_g);
 
-		con->close();
+		con->close();*/
 
-		cout << "[ Connected to mysql server successfully! ]" << endl;
+		this->filename = filename;
+		sqlite::database db(filename);
+
+		db << "create table if not exists users ("
+			"   id integer primary key autoincrement not null,"
+			"   username text,"
+			"   pass text"
+			");";
+
+		db << "create table if not exists posts ("
+			"   id integer primary key autoincrement not null,"
+			"   title text,"
+			"   content BLOB,"
+			"   postdate text,"
+			"   author text"
+			");";
+
+		cout << "[ Connected to database successfully! ]" << endl;
 
 	}
-	catch (sql::SQLException &e) {
-		cout << "[ Failed to connect to mysql server! Error: " << e.getErrorCode() << "]" << endl;
+	catch (exception &e) {
+		cout << "[ Failed to connect to database! Error: " << e.what() << "]" << endl;
 	}
 }
 
@@ -59,31 +74,27 @@ std::string BlogSystem::getUserIP(shared_ptr<HttpServer::Request> request) {
 		return request->remote_endpoint_address;
 }
 
-void BlogSystem::clearSessions() {
-	std::time_t current = std::time(0);
-
-	for (auto& item : sessions) {
-		auto val = item.second;
-		std::time_t past = std::get<2>(val);
-		if (current - past >= SESSIONEXPIRETIME) {
-			sessions.erase(item.first);
-		}
-	}
-}
-
 bool BlogSystem::isLoggedIn(shared_ptr<HttpServer::Request> request) {
-	clearSessions();
-
 	if (sessions.find(getSessionCookie(request)) != sessions.end()) {
 		auto val = sessions[getSessionCookie(request)];
 
 		if (getUserID(std::get<0>(val)) == 0 || std::get<1>(val) != getUserIP(request)) {
+			loggout(std::get<0>(val));
 			return false;
+		}
+		else {
+			std::time_t current = std::time(0);
+			std::time_t past = std::stoi(std::get<2>(val));
+
+			if (current - past >= SESSIONEXPIRETIME) {
+				loggout(std::get<0>(val));
+				return false;
+			}
 		}
 	}
 	else {
 		return false;
-	} 
+	}
 	 
 	return true;
 }
@@ -102,7 +113,7 @@ std::string BlogSystem::createSession(std::string username, shared_ptr<HttpServe
 
 	loggout(username);
 
-	sessions[sessionName] = std::make_tuple(username, getUserIP(request), t);
+	sessions[sessionName] = std::make_tuple(username, getUserIP(request), std::to_string(t));
 
 	return sessionName;
 }
@@ -366,11 +377,6 @@ void BlogSystem::processPostPOST(shared_ptr<HttpServer::Request> request, shared
 		return;
 	}
 	else {
-		if (title.empty() || con.empty()) {
-			sendPage(request, response, "You cannot have an empty fields...");
-			return;
-		}
-
 		auto val = sessions[getSessionCookie(request)];
 		createPost(title, con, std::get<0>(val));
 
@@ -423,8 +429,9 @@ void BlogSystem::processChangePOST(shared_ptr<HttpServer::Request> request, shar
 			sendPage(request, response, "Username or password cannot be empty...");
 			return;
 		}
-					
-		changeUserDetails(newUsername, newPassword, request);
+		else
+			changeUserDetails(newUsername, newPassword, request);
+
 		sendPage(request, response, "Done...");
 	}
 }
@@ -480,12 +487,6 @@ void BlogSystem::processEditPOST(shared_ptr<HttpServer::Request> request, shared
 		return;
 	}
 	else {
-		if (title.empty() || con.empty())
-		{
-			sendPage(request, response, "You cannot have an empty fields...");
-			return;
-		}
-
 		auto val = sessions[getSessionCookie(request)];
 		updatePost(post_id, title, con, std::get<0>(val));
 
@@ -553,78 +554,47 @@ std::stringstream BlogSystem::getPosts(shared_ptr<HttpServer::Request> request, 
 {
 	std::stringstream ss;
 
-	string url(user_g);
-	const string user(pwd_g);
-	const string pass(db_g);
-	const string database(ip_g);
-
 	try {
-		
-		sql::Driver * driver = get_driver_instance();
+		sqlite::database db(this->filename);
 
-		std::auto_ptr< sql::Connection > con(driver->connect(url, user, pass));
-		con->setSchema(database);
-
-		std::auto_ptr< sql::PreparedStatement >  pstmt;
-		std::auto_ptr< sql::ResultSet > res;
-
-		pstmt.reset(con->prepareStatement("SELECT * FROM posts ORDER by id DESC LIMIT 10 OFFSET ?"));
-		pstmt->setInt(1, (page * 10));
-
-		res.reset(pstmt->executeQuery());
-
-		size_t count = res->rowsCount();
+		int count = 0;
+		db << "select count(*) from posts;" >> count;
 
 		if (count <= 0) {
 			addControlsGeneral(request, ss);
 			ss << "<br><br><center>No posts...<center>";
-
-			pstmt->close();
-			con->close();
-
 			cache.erase(CACHEHOME + std::to_string(page));
 			
 			return ss;
 		}
 
-		for (;;)
+		db << "select id,title,content,postdate,author from posts ORDER by id DESC LIMIT 10 OFFSET ? ;"
+			<< (page * 10)
+			>> [&](int id, string title, string content, string postdate, string author)
 		{
-			while (res->next()) {
-				stringstream s = parseBlob(res->getBlob("content"));
-				stringstream sk = parseBlob(res->getBlob("title"));
+			stringstream s(content);
 
-				parser bbparser;
-				bbparser.source_stream(s);
-				bbparser.parse();
+			parser bbparser;
+			bbparser.source_stream(s);
+			bbparser.parse();
 
-				std::string bbCodeParsed = bbparser.content();
+			std::string bbCodeParsed = bbparser.content();
 
-				ss << R"V0G0N(
+			ss << R"V0G0N(
 					<div class="postBox">
 						<div class="postHeader">
-							<a class="postTitle" href="view/)V0G0N" << res->getString("id") << "\">" << sk.str() << R"V0G0N(</a>
-							<span class="postDate">)V0G0N" << res->getString("postdate") << R"V0G0N(</span>
+							<a class="postTitle" href="view/)V0G0N" << id << "\">" << title << R"V0G0N(</a>
+							<span class="postDate">)V0G0N" << postdate << R"V0G0N(</span>
 						</div>
 						<div class="postContent"><p style="white-space:pre-wrap;">)V0G0N" << bbCodeParsed << R"V0G0N(</p></div>
 						<div class="postFooter">
-							<span class="postAuthor">)V0G0N" << res->getString("author") << R"V0G0N(</span>
+							<span class="postAuthor">)V0G0N" << author << R"V0G0N(</span>
 						</div>
 					</div>
 				)V0G0N";
-			}
+		};
 
-			if (pstmt->getMoreResults())
-			{
-				res.reset(pstmt->getResultSet());
-				continue;
-			}
-			break;
-		}
-
-		pstmt.reset(con->prepareStatement("SELECT * FROM posts ORDER by id DESC"));
-		res.reset(pstmt->executeQuery());
-
-		count = res->rowsCount();
+		db << "select count(*) from posts ORDER by id DESC;" >> count;
 
 		if (count > 10) {
 			if ((count - (page * 10)) == count)
@@ -637,29 +607,67 @@ std::stringstream BlogSystem::getPosts(shared_ptr<HttpServer::Request> request, 
 		}
 
 		cache[CACHEHOME + std::to_string(page)] = ss.str();
-
 		addControlsGeneral(request, ss);
 
-		pstmt->close();
-		con->close();
-
 	}
-	catch (sql::SQLException &e) {
+	catch (exception &e) {
 		cout << "# ERR: SQLException in " << __FILE__;
 		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
-		cout << "# ERR: " << e.what();
-		cout << " (MySQL error code: " << e.getErrorCode();
-		cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+		cout << "# ERR: " << e.what() << endl;
 
-		ss << "mysql server failure";
+		ss << "database server failure";
 	}
 
 	return ss;
 }
 
-std::stringstream BlogSystem::getPostInformationById(std::string post_id, std::string info)
+std::string BlogSystem::getPostInformationById(std::string post_id, int info)
 {
 	std::stringstream ss;
+	try {
+		sqlite::database db(this->filename);
+
+		int count = 0;
+		db << "select count(*) from posts where id=?;"
+			<< post_id
+			>> count;
+
+		if (count != 1) {
+			return "error - post not found...";
+		}
+		switch (info)
+		{
+		case codons::id:
+			db << "select id from posts where id=? ;" << post_id >> [&](string content) { ss << content; };
+			break;
+		case codons::title:
+			db << "select title from posts where id=? ;" << post_id >> [&](string content) { ss << content; };
+			break;
+		case codons::author:
+			db << "select author from posts where id=? ;" << post_id >> [&](string content) { ss << content; };
+			break;
+		case codons::content:
+			db << "select content from posts where id=? ;" << post_id >> [&](string content) { ss << content; };
+			break;
+		case codons::postdate:
+			db << "select postdate from posts where id=? ;" << post_id >> [&](string content) { ss << content; };
+			break;
+		default:
+			ss << "unknown codon";
+			break;
+		}
+
+		return ss.str();
+	}
+	catch (exception &e) {
+		cout << "# ERR: SQLException in " << __FILE__;
+		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
+		cout << "# ERR: " << e.what() << endl;
+
+		return "database server failure";
+	}
+
+	/*std::stringstream ss;
 
 	string url(user_g);
 	const string user(pwd_g);
@@ -718,7 +726,7 @@ std::stringstream BlogSystem::getPostInformationById(std::string post_id, std::s
 		cout << ", SQLState: " << e.getSQLState() << " )" << endl;
 	}
 
-	return ss;
+	return ss;*/
 }
 
 void BlogSystem::addControlsGeneral(shared_ptr<HttpServer::Request> request, std::stringstream &ss) {
@@ -827,11 +835,11 @@ void BlogSystem::addControlsView(shared_ptr<HttpServer::Request> request, std::s
 
 									<div id="tab-edit" class="settings-tab-content">
 										<form id="edit-post" action="/edit" method="post">
-											<input type="hidden" name="post_id" value=")V0G0N" << getPostInformationById(post_id, "id").str() << R"V0G0N(" />
+											<input type="hidden" name="post_id" value=")V0G0N" << getPostInformationById(post_id, codons::id) << R"V0G0N(" />
 											<h1>Title:</h1>
-											<input class="textbox-other" type="text" name="title" value=")V0G0N" << getPostInformationById(post_id, "title").str() << R"V0G0N("><br><br>
+											<input class="textbox-other" type="text" name="title" value=")V0G0N" << getPostInformationById(post_id, codons::title) << R"V0G0N("><br><br>
 											<h1>Content:</h1>
-											<textarea class="textbox-other" rows="10" name="content" cols="60">)V0G0N" << getPostInformationById(post_id, "content").str() << R"V0G0N(</textarea>
+											<textarea class="textbox-other" rows="10" name="content" cols="60">)V0G0N" << getPostInformationById(post_id, codons::content) << R"V0G0N(</textarea>
 
 											<br><br>
 											<input type="submit" value="Update">
@@ -840,9 +848,9 @@ void BlogSystem::addControlsView(shared_ptr<HttpServer::Request> request, std::s
 
 									<div id="tab-delete" class="settings-tab-content">
 										<form id="delete-post" action="/delete" method="post">
-											<input type="hidden" name="post_id" value=")V0G0N" << getPostInformationById(post_id, "id").str() << R"V0G0N(" />
+											<input type="hidden" name="post_id" value=")V0G0N" << getPostInformationById(post_id, codons::id) << R"V0G0N(" />
 
-											<b><h2>You are about to delete post ")V0G0N" << getPostInformationById(post_id, "title").str() << R"V0G0N("<br> 
+											<b><h2>You are about to delete post ")V0G0N" << getPostInformationById(post_id, codons::title) << R"V0G0N("<br> 
 											Are you sure?</h2></b><br>
 											<input type="submit" value="Delete">
 										</form>
@@ -860,94 +868,61 @@ std::stringstream BlogSystem::getThisPost(shared_ptr<HttpServer::Request> reques
 {
 	std::stringstream ss;
 
-	string url(user_g);
-	const string user(pwd_g);
-	const string pass(db_g);
-	const string database(ip_g);
-
 	try {
+		sqlite::database db(this->filename);
 
-		sql::Driver * driver = get_driver_instance();
-
-		std::auto_ptr< sql::Connection > con(driver->connect(url, user, pass));
-		con->setSchema(database);
-
-		std::auto_ptr< sql::PreparedStatement >  pstmt;
-		std::auto_ptr< sql::ResultSet > res;
-
-		pstmt.reset(con->prepareStatement("SELECT * FROM posts WHERE id=?"));
-		pstmt->setString(1, post_id);
-
-		res.reset(pstmt->executeQuery());
-
-		size_t count = res->rowsCount();
+		int count = 0;
+		db << "select count(*) from posts where id=?;"
+		<< post_id
+		>> count;
 
 		if (count != 1) {
 			addControlsGeneral(request, ss);
 
 			ss << "<br><br><center> Post was not found or duplicate posts... </center>";
 
-			pstmt->close();
-			con->close();
-
 			cache.erase(post_id);
 
 			return ss;
 		}
 
-		for (;;)
+		db << "select id,title,content,postdate,author from posts where id=? ;"
+			<< post_id
+			>> [&](int id, string title, string content, string postdate, string author)
 		{
-			while (res->next()) {
-				stringstream s = parseBlob(res->getBlob("content"));
-				stringstream sk = parseBlob(res->getBlob("title"));
+			stringstream s(content);
 
-				parser bbparser;
-				bbparser.source_stream(s);
-				bbparser.parse();
+			parser bbparser;
+			bbparser.source_stream(s);
+			bbparser.parse();
 
-				std::string bbCodeParsed = bbparser.content();
+			std::string bbCodeParsed = bbparser.content();
 
-				ss << R"V0G0N(
+			ss << R"V0G0N(
 					<div class="postBox">
 						<div class="postHeader">
-							<span class="postTitleOnPage">)V0G0N" << sk.str() << R"V0G0N(</span>
-							<span class="postDate">)V0G0N" << res->getString("postdate") << R"V0G0N(</span>
+							<span class="postTitleOnPage">)V0G0N" << title << R"V0G0N(</span>
+							<span class="postDate">)V0G0N" << postdate << R"V0G0N(</span>
 						</div>
 						<div class="postContent"><p style="white-space:pre-wrap;">)V0G0N" << bbCodeParsed << R"V0G0N(</p></div>
 						<div class="postFooter">
-							<!--<a href="../edit/)V0G0N" << res->getString("id") << R"V0G0N("><img class="editPostButton" src="http://www.famfamfam.com/lab/icons/silk/icons/application_edit.png" /></a>
-							<a href="../delete/)V0G0N" << res->getString("id") << R"V0G0N("><img class="editPostButton" src="http://www.famfamfam.com/lab/icons/silk/icons/application_delete.png" /></a>-->
-							<span class="postAuthor">)V0G0N" << res->getString("author") << R"V0G0N(</span>
+							<span class="postAuthor">)V0G0N" << author << R"V0G0N(</span>
 						</div>
 					</div>
 				)V0G0N";
+		};
 
-				//cout << "[ Using hdd saving item... ]" << std::endl;
-			}
-			if (pstmt->getMoreResults())
-			{
-				res.reset(pstmt->getResultSet());
-				continue;
-			}
-			break;
-		}
 		cache[post_id] = ss.str();
-
 		addControlsView(request, ss, post_id);
 
-		pstmt->close();
-		con->close();
 	}
-	catch (sql::SQLException &e) {
+	catch (exception &e) {
 		cout << "# ERR: SQLException in " << __FILE__;
 		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
-		cout << "# ERR: " << e.what();
-		cout << " (MySQL error code: " << e.getErrorCode();
-		cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+		cout << "# ERR: " << e.what() << endl;
 
-		ss << "mysql server failure";
+		ss << "database server failure";
 	}
-
 	
 	return ss;
 }
@@ -956,90 +931,48 @@ std::stringstream BlogSystem::findPost(shared_ptr<HttpServer::Request> request, 
 {
 	std::stringstream ss;
 
-	string url(user_g);
-	const string user(pwd_g);
-	const string pass(db_g);
-	const string database(ip_g);
-
 	try {
 		value = UriDecode(value);
 		Encode(value);
 
-		sql::Driver * driver = get_driver_instance();
+		sqlite::database db(this->filename);
 
-		std::auto_ptr< sql::Connection > con(driver->connect(url, user, pass));
-		con->setSchema(database);
-
-		std::auto_ptr< sql::PreparedStatement >  pstmt;
-		std::auto_ptr< sql::ResultSet > res;
-
-		pstmt.reset(con->prepareStatement("SELECT * FROM posts WHERE title LIKE ? OR content LIKE ? OR postdate LIKE ?"));
-		pstmt->setString(1, "%" + value + "%");
-		pstmt->setString(2, "%" + value + "%");
-		pstmt->setString(3, "%" + value + "%");
-
-		res.reset(pstmt->executeQuery());
-
-		size_t count = res->rowsCount();
-
-		if (count < 1) {
-			addControlsGeneral(request, ss);
-			ss << "<br><br><center>Sadly, no post(s) were found...</center>";
-
-			pstmt->close();
-			con->close();
-
-			return ss;
-		}
-
-		for (;;)
+		db << "select id,title,content,postdate,author from posts where title LIKE ? OR content LIKE ? OR postdate LIKE ? ;"
+			<< "%" + value + "%"
+			<< "%" + value + "%"
+			<< "%" + value + "%"
+			>> [&](int id, string title, string content, string postdate, string author)
 		{
-			while (res->next()) {
-				stringstream s = parseBlob(res->getBlob("content"));
-				stringstream sk = parseBlob(res->getBlob("title"));
+			stringstream s(content);
 
-				parser bbparser;
-				bbparser.source_stream(s);
-				bbparser.parse();
+			parser bbparser;
+			bbparser.source_stream(s);
+			bbparser.parse();
 
-				std::string bbCodeParsed = bbparser.content();
+			std::string bbCodeParsed = bbparser.content();
 
-				ss << R"V0G0N(
+			ss << R"V0G0N(
 					<div class="postBox">
 						<div class="postHeader">
-							<a class="postTitle" href="view/)V0G0N" << res->getString("id") << "\">" << sk.str() << R"V0G0N(</a>
-							<span class="postDate">)V0G0N" << res->getString("postdate") << R"V0G0N(</span>
+							<a class="postTitle" href="view/)V0G0N" << id << "\">" << title << R"V0G0N(</a>
+							<span class="postDate">)V0G0N" << postdate << R"V0G0N(</span>
 						</div>
 						<div class="postContent"><p style="white-space:pre-wrap;">)V0G0N" << bbCodeParsed << R"V0G0N(</p></div>
 						<div class="postFooter">
-							<span class="postAuthor">)V0G0N" << res->getString("author") << R"V0G0N(</span>
+							<span class="postAuthor">)V0G0N" << author << R"V0G0N(</span>
 						</div>
 					</div>
 				)V0G0N";
-
-				//cout << "[ Using hdd saving item... ]" << std::endl;
-			}
-			if (pstmt->getMoreResults())
-			{
-				res.reset(pstmt->getResultSet());
-				continue;
-			}
-			break;
-		}
+		};
 
 		addControlsGeneral(request, ss);
-
-		pstmt->close();
-		con->close();
 	}
-	catch (sql::SQLException &e) {
+	catch (exception &e) {
 		cout << "# ERR: SQLException in " << __FILE__;
 		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
-		cout << "# ERR: " << e.what();
-		cout << " (MySQL error code: " << e.getErrorCode();
-		cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+		cout << "# ERR: " << e.what() << endl;
 
-		ss << "mysql server failure";
+		ss << "database server failure";
 	}
 
 	return ss;
@@ -1069,20 +1002,10 @@ std::string BlogSystem::getSessionCookie(shared_ptr<HttpServer::Request> request
 
 int BlogSystem::createPost(std::string title, std::string content, std::string author)
 {
-	string url(user_g);
-	const string user(pwd_g);
-	const string pass(db_g);
-	const string database(ip_g);
+	std::stringstream ss;
 
 	try {
-
-		sql::Driver * driver = get_driver_instance();
-
-		std::auto_ptr< sql::Connection > con(driver->connect(url, user, pass));
-		con->setSchema(database);
-
-		std::auto_ptr< sql::PreparedStatement >  pstmt;
-		std::auto_ptr< sql::ResultSet > res;
+		sqlite::database db(this->filename);
 
 		time_t t = time(0);
 		struct tm * now = localtime(&t);
@@ -1092,62 +1015,31 @@ int BlogSystem::createPost(std::string title, std::string content, std::string a
 			<< (now->tm_year + 1900)
 			<< endl;
 
-		pstmt.reset(con->prepareStatement("INSERT INTO posts (title, content, postdate, author) VALUES (?,?,?,?)"));
-		pstmt->setString(1, title);
-		pstmt->setString(2, content);
-		pstmt->setString(3, stime.str());
-		pstmt->setString(4, author);
-
-		res.reset(pstmt->executeQuery());
+		db << "insert into posts (title, content, postdate, author) values (?,?,?,?);"
+			<< title
+			<< content
+			<< stime.str()
+			<< author;
 
 		cache.clear();
 
-		size_t count = res->rowsCount();
-
-		if (count <= 0) {
-			pstmt->close();
-			con->close();
-
-			return 0;
-		}
-		else {
-			pstmt->close();
-			con->close();
-
-			return 1;
-		}
+		return 1;
 	}
-	catch (sql::SQLException e) {
+	catch (exception &e) {
 		cout << "# ERR: SQLException in " << __FILE__;
 		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
-		cout << "# ERR: " << e.what();
-		cout << " (MySQL error code: " << e.getErrorCode();
-		cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+		cout << "# ERR: " << e.what() << endl;
 
-		return -1;
+		return 0;
 	}
-
-	return 0;
 }
 
 int BlogSystem::updatePost(std::string post_id, std::string title, std::string content, std::string author)
 {
-	string url(user_g);
-	const string user(pwd_g);
-	const string pass(db_g);
-	const string database(ip_g);
-
 	try {
+		sqlite::database db(this->filename);
 
-		sql::Driver * driver = get_driver_instance();
-
-		std::auto_ptr< sql::Connection > con(driver->connect(url, user, pass));
-		con->setSchema(database);
-
-		std::auto_ptr< sql::PreparedStatement >  pstmt;
-		std::auto_ptr< sql::ResultSet > res;
-
-		time_t t = time(0); 
+		time_t t = time(0);
 		struct tm * now = localtime(&t);
 		stringstream stime;
 		stime << now->tm_mday << '/'
@@ -1155,305 +1047,219 @@ int BlogSystem::updatePost(std::string post_id, std::string title, std::string c
 			<< (now->tm_year + 1900)
 			<< endl;
 
-		pstmt.reset(con->prepareStatement("UPDATE posts SET title=?, content=?, postdate=?, author=? WHERE id=?"));
+		int count = 0;
 
-		pstmt->setString(1, title);
-		pstmt->setString(2, content);
-		pstmt->setString(3, stime.str());
-		pstmt->setString(4, author);
-		pstmt->setString(5, post_id);
+		db << "select count(*) from posts where id=? ;"
+			<< post_id
+			>> count;
 
-		
+		if (count == 1)
+		{
+			db << "update posts set title=?, content=?, postdate=?, author=? WHERE id=? ;"
+				<< title
+				<< content
+				<< stime.str()
+				<< author
+				<< post_id;
 
-		res.reset(pstmt->executeQuery());
-
-		cache.clear();
-
-		size_t count = res->rowsCount();
-
-		if (count <= 0) {
-			pstmt->close();
-			con->close();
-
-			return 0;
-		}
-		else {
-			pstmt->close();
-			con->close();
+			cache.clear();
 
 			return 1;
 		}
 
-
+		return 0;
 	}
-	catch (sql::SQLException e) {
+	catch (exception &e) {
 		cout << "# ERR: SQLException in " << __FILE__;
 		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
-		cout << "# ERR: " << e.what();
-		cout << " (MySQL error code: " << e.getErrorCode();
-		cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+		cout << "# ERR: " << e.what() << endl;
 
-		return -1;
+		return 0;
 	}
-
-	return 0;
 }
 
 int BlogSystem::deletePost(std::string post_id)
 {
-	string url(user_g);
-	const string user(pwd_g);
-	const string pass(db_g);
-	const string database(ip_g);
-
 	try {
+		sqlite::database db(this->filename);
 
-		sql::Driver * driver = get_driver_instance();
+		int count = 0;
 
-		std::auto_ptr< sql::Connection > con(driver->connect(url, user, pass));
-		con->setSchema(database);
+		db << "select count(*) from posts where id=? ;"
+			<< post_id
+			>> count;
 
-		std::auto_ptr< sql::PreparedStatement >  pstmt;
-		std::auto_ptr< sql::ResultSet > res;
+		if (count == 1)
+		{
+			db << "delete from posts where id=? ;"
+				<< post_id;
 
-		pstmt.reset(con->prepareStatement("DELETE FROM posts WHERE id=?"));
-		pstmt->setString(1, post_id);
-
-		res.reset(pstmt->executeQuery());
-
-		cache.clear();
-
-		size_t count = res->rowsCount();
-
-		if (count <= 0) {
-			pstmt->close();
-			con->close();
-
-			return 0;
-		}
-		else {
-
-
-
-			pstmt->close();
-			con->close();
+			cache.clear();
 
 			return 1;
 		}
+
+
+
+		return 0;
 	}
-	catch (sql::SQLException e) {
+	catch (exception &e) {
 		cout << "# ERR: SQLException in " << __FILE__;
 		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
-		cout << "# ERR: " << e.what();
-		cout << " (MySQL error code: " << e.getErrorCode();
-		cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+		cout << "# ERR: " << e.what() << endl;
 
-		return -1;
+		return 0;
 	}
-
-	return 0;
 }
 
 
 int BlogSystem::hashPassword(char *dst, const char *passphrase, uint32_t N, uint8_t r, uint8_t p) {
-	int retval;
-	uint8_t salt[SCRYPT_SALT_LEN] = {};
-	uint8_t	hashbuf[SCRYPT_HASH_LEN];
-	char outbuf[256];
-	char saltbuf[256];
+	try {
+		uint8_t salt[SCRYPT_SALT_LEN] = {};
+		uint8_t	hashbuf[SCRYPT_HASH_LEN];
+		char outbuf[256];
+		char saltbuf[256];
 
-	std::string generatedSalt = generateSalt(SCRYPT_SALT_LEN);
-	if (generatedSalt == "")
-	{
-		throw std::runtime_error("generateSalt error...");
+		auto generatedSalt = generateSalt(SCRYPT_SALT_LEN);
+		if (generatedSalt == "")
+		{
+			throw std::runtime_error("generateSalt error...");
+		}
+
+		copy(generatedSalt.begin(), generatedSalt.end(), salt);
+		salt[generatedSalt.length() - 1] = 0;
+
+		auto retval = libscrypt_scrypt(reinterpret_cast<const uint8_t*>(passphrase), strlen(passphrase),
+			static_cast<uint8_t*>(salt), SCRYPT_SALT_LEN, N, r, p, hashbuf, sizeof(hashbuf));
+		if (retval == -1)
+			throw std::runtime_error("libscrypt_scrypt error...");
+
+		retval = libscrypt_b64_encode(static_cast<unsigned char*>(hashbuf), sizeof(hashbuf),
+			outbuf, sizeof(outbuf));
+		if (retval == -1)
+			throw std::runtime_error("libscrypt_b64_encode error...");
+
+		retval = libscrypt_b64_encode(static_cast<unsigned char *>(salt), sizeof(salt),
+			saltbuf, sizeof(saltbuf));
+
+		if (retval == -1)
+			throw std::runtime_error("libscrypt_b64_encode #2 error...");
+
+		retval = libscrypt_mcf(N, r, p, saltbuf, outbuf, dst);
+		if (retval != 1)
+			throw std::runtime_error("libscrypt_mcf error...");
+
+		return 1;
 	}
+	catch (runtime_error &e) {
+		cout << "# ERR: SQLException in " << __FILE__;
+		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
+		cout << "# ERR: " << e.what() << endl;
 
-	copy(generatedSalt.begin(), generatedSalt.end(), salt);
-	salt[generatedSalt.length() - 1] = 0;
-
-	retval = libscrypt_scrypt((const uint8_t*)passphrase, strlen(passphrase),
-		(uint8_t*)salt, SCRYPT_SALT_LEN, N, r, p, hashbuf, sizeof(hashbuf));
-	if (retval == -1)
-		throw std::runtime_error("libscrypt_scrypt error...");
-
-	retval = libscrypt_b64_encode((unsigned char*)hashbuf, sizeof(hashbuf),
-		outbuf, sizeof(outbuf));
-	if (retval == -1)
-		throw std::runtime_error("libscrypt_b64_encode error...");
-
-	retval = libscrypt_b64_encode((unsigned char *)salt, sizeof(salt),
-		saltbuf, sizeof(saltbuf));
-	if (retval == -1)
-		throw std::runtime_error("libscrypt_b64_encode #2 error...");
-
-	retval = libscrypt_mcf(N, r, p, saltbuf, outbuf, dst);
-	if (retval != 1)
-		throw std::runtime_error("libscrypt_mcf error...");
-
-	return 1;
+		return 0;
+	}
 }
 
 void BlogSystem::changeUserDetails(std::string user_input, std::string pwd_input, shared_ptr<HttpServer::Request> request)
 {
-	string url(user_g);
-	const string user(pwd_g);
-	const string pass(db_g);
-	const string database(ip_g);
+	if (user_input.length() == 0 || pwd_input.length() == 0)
+		return;
 
 	try {
-		char finalPassword[1024];
-		const char *passphrase = pwd_input.c_str();
+		sqlite::database db(this->filename);
+
 		auto val = sessions[getSessionCookie(request)];
-		hashPassword(finalPassword, passphrase, SCRYPT_N, SCRYPT_r, SCRYPT_p);
+		int count = 0;
 
-		sql::Driver * driver = get_driver_instance();
+		db << "select count(*) from users where username=? ;"
+			<< std::get<0>(val)
+			>> count;
 
-		std::auto_ptr< sql::Connection > con(driver->connect(url, user, pass));
-		con->setSchema(database);
+		if (count == 1)
+		{
+			char finalPassword[1024];
+			auto passphrase = pwd_input.c_str();
+			
+			hashPassword(finalPassword, passphrase, SCRYPT_N, SCRYPT_r, SCRYPT_p);
 
-		std::auto_ptr< sql::PreparedStatement >  pstmt;
-		std::auto_ptr< sql::ResultSet > res;
+			db << "update users set username=?, pass=? where username=? ;"
+				<< user_input
+				<< finalPassword
+				<< std::get<0>(val);
 
-		pstmt.reset(con->prepareStatement("UPDATE users SET username=?, pass=? WHERE username=?"));
-
-		pstmt->setString(1, user_input);
-		pstmt->setString(2, finalPassword);
-		pstmt->setString(3, std::get<0>(val)); 
-
-		loggout(std::get<0>(val));
-		
-		res.reset(pstmt->executeQuery());
+			loggout(std::get<0>(val)); 
+		}
 	}
-	catch (sql::SQLException e) {
+	catch (exception &e) {
 		cout << "# ERR: SQLException in " << __FILE__;
 		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
-		cout << "# ERR: " << e.what();
-		cout << " (MySQL error code: " << e.getErrorCode();
-		cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+		cout << "# ERR: " << e.what() << endl;
 	}
 }
 
 
 int BlogSystem::processLogin(std::string user_input, std::string pwd_input)
 {
-	string url(user_g);
-	const string user(pwd_g);
-	const string pass(db_g);
-	const string database(ip_g);
-
 	try {
+		sqlite::database db(this->filename);
 
-		sql::Driver * driver = get_driver_instance();
+		int result = 0;
+		int count = 0;
+		db << "select count(*) from users where username=? ;"
+			<< user_input
+			>> count;
 
-		std::auto_ptr< sql::Connection > con(driver->connect(url, user, pass));
-		con->setSchema(database);
-
-		std::auto_ptr< sql::PreparedStatement >  pstmt;
-		std::auto_ptr< sql::ResultSet > res;
-
-		pstmt.reset(con->prepareStatement("SELECT * FROM users WHERE username=?"));
-		pstmt->setString(1, user_input);
-		res.reset(pstmt->executeQuery());
-
-		size_t count = res->rowsCount();
-
-		if (count != 1) {
-			pstmt->close();
-			con->close();
-
-			return 0;
-		}
-
-		for (;;)
+		if (count == 1)
 		{
-			while (res->next()) 
+			db << "select username,pass from users where username=? ;"
+				<< user_input
+				>> [&](string username, string pwd)
 			{
 				char dst[1024];
-				auto pwd = res->getString("pass").asStdString();
 
 				copy(pwd.begin(), pwd.end(), dst);
 				dst[pwd.length()] = 0;
 
 				if (libscrypt_check(dst, pwd_input.c_str()) > 0)
-					return 1;
-				else
-					return 0;
-
-				pstmt->close();
-				con->close();
-
-				return 0;
-			}
-			if (pstmt->getMoreResults())
-			{
-				res.reset(pstmt->getResultSet());
-				continue;
-			}
-			break;
+					result = 1;
+				else 
+					result = 0;
+			};
 		}
+
+		return result;
 	}
-	catch (sql::SQLException e) {
+	catch (exception &e) {
 		cout << "# ERR: SQLException in " << __FILE__;
 		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
-		cout << "# ERR: " << e.what();
-		cout << " (MySQL error code: " << e.getErrorCode();
-		cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+		cout << "# ERR: " << e.what() << endl;
 
-		return -1;
+		return 0;
 	}
-
-	return 0;
 }
 
 int BlogSystem::getUserID(std::string user_input)
 {
-
-	string url(user_g);
-	const string user(pwd_g);
-	const string pass(db_g);
-	const string database(ip_g);
-
 	try {
+		sqlite::database db(this->filename);
 
-		sql::Driver * driver = get_driver_instance();
+		int count = 0;
+		db << "select count(*) from users where username=? ;"
+			<< user_input
+			>> count;
 
-		std::auto_ptr< sql::Connection > con(driver->connect(url, user, pass));
-		con->setSchema(database);
-
-		std::auto_ptr< sql::PreparedStatement >  pstmt;
-		std::auto_ptr< sql::ResultSet > res;
-
-		pstmt.reset(con->prepareStatement("SELECT * FROM users WHERE username=?"));
-		pstmt->setString(1, user_input);
-
-
-		res.reset(pstmt->executeQuery());
-
-		size_t count = res->rowsCount();
-
-		if (count != 1) {
-			pstmt->close();
-			con->close();
-
-			return 0;
+		if (count == 1)
+		{
+			return 1;
 		}
-
-		pstmt->close();
-		con->close();
-
-		return 1;
-
-		
-	}
-	catch (sql::SQLException e) {
-		cout << "# ERR: SQLException in " << __FILE__;
-		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
-		cout << "# ERR: " << e.what();
-		cout << " (MySQL error code: " << e.getErrorCode();
-		cout << ", SQLState: " << e.getSQLState() << " )" << endl;
 
 		return 0;
 	}
+	catch (exception &e) {
+		cout << "# ERR: SQLException in " << __FILE__;
+		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
+		cout << "# ERR: " << e.what() << endl;
 
-	return 0;
+		return 0;
+	}
 }

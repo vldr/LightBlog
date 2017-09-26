@@ -3,33 +3,19 @@
 #define BOOST_SPIRIT_THREADSAFE
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
-#include <boost/range.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/split.hpp>
-#include <boost/random/random_device.hpp>
 #include <boost/random/uniform_int_distribution.hpp>
 
 #include <fstream>
 #include <iostream>
 #include <vector>
 #include <algorithm>
-#include <stdint.h>
 #include <string>
 #include <sstream>
 #include <stdexcept>
 #include <iostream>
 #include <string>
-#include <stdio.h>
 #include <cstdlib>
-#include <string.h>
-
-
-std::string DB_HOST = "127.0.0.1";
-std::string DB_USER = "root";
-std::string DB_PASS = "";
-std::string DB_DB = "blog";
-#define THROW(exceptionClass, message) throw exceptionClass(__FILE__, __LINE__, (message) )
 
 using namespace std;
 using namespace boost::property_tree;
@@ -37,18 +23,16 @@ using namespace boost::property_tree;
 void default_resource_send(const HttpServer &server, const shared_ptr<HttpServer::Response> &response,
 	const shared_ptr<ifstream> &ifs); 
 
-
 int main(int argc, char* argv[]) 
 {
-
 #ifdef _WIN32
 	system("cls");
 #endif // _WIN32
 
 	cout << "[ vldr web app - " << __DATE__ << " ]" << std::endl;
 
-	HttpServer server(8080, 1);
-	if (argc == 6) {
+	HttpServer server(8080, 1); 
+	/*if (argc == 6) {
 		DB_HOST = argv[1];
 		DB_USER = argv[2];
 
@@ -60,9 +44,18 @@ int main(int argc, char* argv[])
 		DB_DB = argv[4];
 		cout << "[ Using parameters to connect... ]" << std::endl;
 		server.config.port = atoi(argv[5]);
+	}*/
+
+	std::string filename = "sql.db";
+
+	if (argc == 3) {
+		filename = argv[1];
+		server.config.port = atoi(argv[2]);
+
+		cout << "[ Using parameters to connect... ]" << std::endl;
 	}
 
-	BlogSystem blog(DB_HOST, DB_USER, DB_PASS, DB_DB);
+	BlogSystem blog(filename);
 
 	server.resource["^/api/find/" + blog.REGEXSEARCH + "$"]["GET"] = [&server, &blog](shared_ptr<HttpServer::Response> response,
 		shared_ptr<HttpServer::Request> request) {

@@ -2,17 +2,9 @@
 #include "server_http.hpp"
 #include "client_http.hpp"
 
-#include <iostream>
 #include <sstream>
 #include <map>
 #include <codecvt>
-#include <fstream>
-
-#include <cppconn/driver.h>
-#include <cppconn/exception.h>
-#include <cppconn/resultset.h>
-#include <cppconn/statement.h>
-#include <cppconn/prepared_statement.h>
 
 #include <boost/functional/hash.hpp>
 #include <boost/algorithm/string/classification.hpp>
@@ -22,7 +14,6 @@
 #include <boost/regex/pending/unicode_iterator.hpp>
 #include <boost/spirit/include/qi.hpp>
 
-#include <vector>
 #include "scrypt/libscrypt.h"
 #include "scrypt/b64.h"
 
@@ -36,18 +27,19 @@ typedef HTTPExServer::Client<HTTPExServer::HTTP> HttpClient;
 
 class BlogSystem
 {
-public:
-	struct blogSessionToken {
-		std::string name;
-		std::string data;
-		std::string ip;
+public: 
+	enum codons : int
+	{
+		id,
+		title,
+		content,
+		author,
+		postdate
 	};
 
-	BlogSystem(std::string user, std::string pwd, std::string db, std::string ip);
+	BlogSystem(std::string dbfilename);
 
 	std::string getUserIP(shared_ptr<HttpServer::Request> request);
-
-	void clearSessions();
 
 	bool isLoggedIn(shared_ptr<HttpServer::Request> request);
 
@@ -70,7 +62,7 @@ public:
 	void processDeletePOST(shared_ptr<HttpServer::Request> request, shared_ptr<HttpServer::Response> response);
 
 	std::stringstream getPosts(shared_ptr<HttpServer::Request> rq, int page = 0);
-	std::stringstream getPostInformationById(std::string post_id, std::string info);
+	std::string getPostInformationById(std::string post_id, int info);
 	void addControlsGeneral(shared_ptr<HttpServer::Request> request, std::stringstream & ss);
 	void addControlsView(shared_ptr<HttpServer::Request> request, std::stringstream & ss, std::string post_id);
 	std::stringstream getThisPost(shared_ptr<HttpServer::Request> request, std::string post_id);
@@ -243,14 +235,15 @@ public:
 	const std::string CACHEHOME = "home";
 	const std::string REGEXNUMBER = "([0-9]{1,9})";
 	const std::string REGEXSEARCH = "([a-z,A-Z,0-9,%,-,_,.,!,~,*,',(,)]+)";
-	const time_t SESSIONEXPIRETIME = 300;
+	const int SESSIONEXPIRETIME = 360;
 
 	std::map<string, string> cache;
-	std::map<string, std::tuple<string, string, time_t>> sessions;
+	std::map<string, std::tuple<string, string, string>> sessions;
 protected:
 	
-	std::string user_g;
-	std::string pwd_g;
-	std::string db_g;
-	std::string ip_g;
+	std::string filename = "sql.db";
+	std::string user_g = "";
+	std::string pwd_g = "";
+	std::string db_g = "";
+	std::string ip_g = "";
 };
