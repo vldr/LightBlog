@@ -14,15 +14,13 @@ http://blog.vldr.org/
 # Dependencies
 * Boost C++ libraries
 * OpenSSL libraries (if you wish to use HTTPS, you will need to implement it yourself).
-* MySQL Connector (https://dev.mysql.com/downloads/connector/cpp/)
 
 # Binaries
 ### Windows
 - Requires <a href="https://www.microsoft.com/en-ca/download/details.aspx?id=48145">Visual C++ Redist. 2015</a><br>
 - Requires <a href="https://go.microsoft.com/fwlink/?LinkId=746572">Visual C++ Redist. 2017</a><br>
-- Requires https://github.com/vldr/LightBlogExpress/raw/master/bin/windowsx64/mysqlcppconn.dll
 
-Usage: `LightBlog.exe DB_HOST DB_USER DB_PASS DB_NAME PORT`
+Usage: `LightBlog.exe DBFILENAME PORT`
 
 ### macOS Sierra (xcode developer tools required) (boost)
 Setup: 
