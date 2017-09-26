@@ -21,11 +21,9 @@ if(APPLE)
     set(OPENSSL_ROOT_DIR "/usr/local/opt/openssl")
 endif()
 
-add_executable(lightblog main.cpp blog.cpp scrypt/b64.cpp scrypt/crypto_scrypt-check.cpp scrypt/crypto_scrypt-hexconvert.cpp scrypt/crypto_scrypt-nosse.cpp scrypt/crypto-mcf.cpp scrypt/sha256.cpp scrypt/slowequals.cpp bbcode/bbcode_lexer.cpp bbcode/bbcode_parser.cpp bbcode/bbcode_utils.cpp)
+add_executable(lightblog main.cpp blog.cpp sqlite3.c scrypt/b64.cpp scrypt/crypto_scrypt-check.cpp scrypt/crypto_scrypt-hexconvert.cpp scrypt/crypto_scrypt-nosse.cpp scrypt/crypto-mcf.cpp scrypt/sha256.cpp scrypt/slowequals.cpp bbcode/bbcode_lexer.cpp bbcode/bbcode_parser.cpp bbcode/bbcode_utils.cpp)
 target_link_libraries(lightblog ${Boost_LIBRARIES})
 target_link_libraries(lightblog ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(lightblog /root/lightblog/libs/lib/libmysqlcppconn.so)
-include_directories(/root/lightblog/libs/include/)
 
 #TODO: add requirement for version 1.0.1g (can it be done in one line?)
 find_package(OpenSSL)
