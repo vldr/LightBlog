@@ -49,7 +49,7 @@ sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 60 --slave 
 7. `./lightblog.ubuntu1404x64 DB_HOST DB_USER DB_PASS DB_NAME PORT`
 
 # Database
-LightBlogExpress uses <b>MySQL</b>, and uses scrypt hashing for passwords.
+LightBlogExpress uses <b>SQLite 3</b>, and scrypt hashing for passwords.
 
 Go to `/login` and logon to change username and pasword; default username and password is:
 `vlad` and `test`
