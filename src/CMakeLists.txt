@@ -1,6 +1,7 @@
 cmake_minimum_required (VERSION 2.8.8)
 project (LightBlog)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -lmysqlclient -ldl -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+
 
 include_directories(.)
 
@@ -22,6 +23,7 @@ if(APPLE)
 endif()
 
 add_executable(lightblog main.cpp blog.cpp sqlite3.c scrypt/b64.cpp scrypt/crypto_scrypt-check.cpp scrypt/crypto_scrypt-hexconvert.cpp scrypt/crypto_scrypt-nosse.cpp scrypt/crypto-mcf.cpp scrypt/sha256.cpp scrypt/slowequals.cpp bbcode/bbcode_lexer.cpp bbcode/bbcode_parser.cpp bbcode/bbcode_utils.cpp)
+target_link_libraries(lightblog ${CMAKE_DL_LIBS})
 target_link_libraries(lightblog ${Boost_LIBRARIES})
 target_link_libraries(lightblog ${CMAKE_THREAD_LIBS_INIT})
 
@@ -38,4 +40,4 @@ endif()
 
 enable_testing()
 
-install(FILES blog.hpp sqlite_modern_cpp/lists/error_codes.h sqlite_modern_cpp/utility/variant.h sqlite_modern_cpp/utility/uncaught_exceptions.h sqlite_modern_cpp/utility/function_traits.h sqlite_modern_cpp.h sqlite3.h sqlite_modern_cpp/sqlcipher.h sqlite_modern_cpp/log.h sqlite_modern_cpp/errors.h server_http.hpp client_http.hpp scrypt/b64.h scrypt/crypto_scrypt-hexconvert.h scrypt/libscrypt.h scrypt/sha256.h scrypt/slowequals.h scrypt/sysendian.h DESTINATION include/simple-web-server)
+install(FILES blog.hpp sqlite3.h sqlite_modern_cpp/lists/error_codes.h sqlite_modern_cpp/utility/variant.h sqlite_modern_cpp/utility/uncaught_exceptions.h sqlite_modern_cpp/utility/function_traits.h sqlite_modern_cpp.h sqlite_modern_cpp/sqlcipher.h sqlite_modern_cpp/log.h sqlite_modern_cpp/errors.h server_http.hpp client_http.hpp scrypt/b64.h scrypt/crypto_scrypt-hexconvert.h scrypt/libscrypt.h scrypt/sha256.h scrypt/slowequals.h scrypt/sysendian.h DESTINATION include/simple-web-server)

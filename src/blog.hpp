@@ -5,6 +5,7 @@
 #include <sstream>
 #include <map>
 #include <codecvt>
+#include <fstream>
 
 #include <boost/functional/hash.hpp>
 #include <boost/algorithm/string/classification.hpp>
