@@ -52,7 +52,8 @@ sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 60 --slave 
 # Database
 LightBlogExpress uses <b>SQLite 3</b>, and scrypt hashing for passwords.
 
-Go to `/login` and logon to change username and pasword; default username and password is:
-`vlad` and `test`
+Go to `/login` and logon to change username and pasword; 
+default username and password is:
+`admin` and `admin`
 
 
