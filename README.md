@@ -17,7 +17,6 @@ http://blog.vldr.org/
 
 # Binaries
 ### Windows
-- Requires <a href="https://www.microsoft.com/en-ca/download/details.aspx?id=48145">Visual C++ Redist. 2015</a><br>
 - Requires <a href="https://go.microsoft.com/fwlink/?LinkId=746572">Visual C++ Redist. 2017</a><br>
 - Requires https://github.com/vldr/LightBlog/raw/master/sql/sql.db
 
@@ -30,27 +29,27 @@ Setup:
 3. `chmod +x lightblog.macos`
 4. `./lightblog.macos DB_HOST DB_USER DB_PASS DB_NAME PORT`
 
-### Ubuntu 14.04 x64
+### Ubuntu 16.04 x86_64
 Setup:
 1. `apt-get update`
 2. `sudo apt-get install libboost-all-dev`
-3. `sudo apt-get update && \
-sudo apt-get install build-essential software-properties-common -y && \
-sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y && \
-sudo apt-get update && \
-sudo apt-get install gcc-snapshot -y && \
-sudo apt-get update && \
-sudo apt-get install gcc-6 g++-6 -y && \
-sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-6 60 --slave /usr/bin/g++ g++ /usr/bin/g++-6 && \
-sudo apt-get install gcc-4.8 g++-4.8 -y && \
-sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 60 --slave /usr/bin/g++ g++ /usr/bin/g++-4.8;`
-4. `wget https://github.com/vldr/LightBlogExpress/raw/master/bin/ubuntu1404x64mysql/libmysqlcppconn.so`
-5. `wget https://github.com/vldr/LightBlogExpress/raw/master/bin/lightblog.ubuntu1404x64`
-6. `chmod +x lightblog.ubuntu1404x64`
-7. `./lightblog.ubuntu1404x64 DB_HOST DB_USER DB_PASS DB_NAME PORT`
+3. `wget https://github.com/vldr/LightBlog/raw/master/bin/lightblog.ubuntu_16_04_x64`
+4. `chmod +x lightblog.ubuntu_16_04_x64`
+5. `./lightblog.ubuntu_16_04_x64 DBFILENAME PORT`
+
+### Ubuntu 16.04 aarch64 (ARM 64)
+Setup:
+1. `apt-get update`
+2. `sudo apt-get install libboost-all-dev`
+3. `wget https://github.com/vldr/LightBlog/raw/master/bin/lightblog.ubuntu_16_04_arm64`
+4. `chmod +x lightblog.ubuntu_16_04_arm64`
+5. `./lightblog.ubuntu_16_04_arm64 DBFILENAME PORT`
 
 # Database
-LightBlogExpress uses <b>SQLite 3</b>, and scrypt hashing for passwords.
+LightBlogExpress uses <b>SQLite 3</b>.
+
+# Password Hashing
+SCrypt is used for hashing passwords...
 
 Go to `/login` and logon to change username and pasword; 
 default username and password is:
