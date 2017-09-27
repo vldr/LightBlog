@@ -33,10 +33,10 @@ Setup:
 
 ### Ubuntu 16.04 x86_64
 Setup:
-3. `wget https://github.com/vldr/LightBlog/raw/master/sql/sql.db`
-4. `wget https://github.com/vldr/LightBlog/raw/master/bin/lightblog.ubuntu_16_04_x64`
-5. `chmod +x lightblog.ubuntu_16_04_x64`
-6. `./lightblog.ubuntu_16_04_x64 DBFILENAME PORT`
+1. `wget https://github.com/vldr/LightBlog/raw/master/sql/sql.db`
+2. `wget https://github.com/vldr/LightBlog/raw/master/bin/lightblog.ubuntu_16_04_x64`
+3. `chmod +x lightblog.ubuntu_16_04_x64`
+4. `./lightblog.ubuntu_16_04_x64 DBFILENAME PORT`
 
 ### Ubuntu 16.04 aarch64 (ARM 64)
 Setup:
