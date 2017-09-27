@@ -48,7 +48,7 @@ Setup:
 6. `./lightblog.ubuntu_16_04_arm64 DBFILENAME PORT`
 
 # Database
-LightBlogExpress uses <b>SQLite 3</b>.
+LightBlog uses <b>SQLite 3</b>.
 
 # Password Hashing
 SCrypt is used for hashing passwords...
