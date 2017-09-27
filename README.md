@@ -32,18 +32,20 @@ Setup:
 ### Ubuntu 16.04 x86_64
 Setup:
 1. `apt-get update`
-2. `sudo apt-get install libboost-all-dev`
-3. `wget https://github.com/vldr/LightBlog/raw/master/bin/lightblog.ubuntu_16_04_x64`
-4. `chmod +x lightblog.ubuntu_16_04_x64`
-5. `./lightblog.ubuntu_16_04_x64 DBFILENAME PORT`
+2. `apt-get install libboost-all-dev`
+3. `wget https://github.com/vldr/LightBlog/raw/master/sql/sql.db`
+4. `wget https://github.com/vldr/LightBlog/raw/master/bin/lightblog.ubuntu_16_04_x64`
+5. `chmod +x lightblog.ubuntu_16_04_x64`
+6. `./lightblog.ubuntu_16_04_x64 DBFILENAME PORT`
 
 ### Ubuntu 16.04 aarch64 (ARM 64)
 Setup:
 1. `apt-get update`
-2. `sudo apt-get install libboost-all-dev`
-3. `wget https://github.com/vldr/LightBlog/raw/master/bin/lightblog.ubuntu_16_04_arm64`
-4. `chmod +x lightblog.ubuntu_16_04_arm64`
-5. `./lightblog.ubuntu_16_04_arm64 DBFILENAME PORT`
+2. `apt-get install libboost-all-dev`
+3. `wget https://github.com/vldr/LightBlog/raw/master/sql/sql.db`
+4. `wget https://github.com/vldr/LightBlog/raw/master/bin/lightblog.ubuntu_16_04_arm64`
+5. `chmod +x lightblog.ubuntu_16_04_arm64`
+6. `./lightblog.ubuntu_16_04_arm64 DBFILENAME PORT`
 
 # Database
 LightBlogExpress uses <b>SQLite 3</b>.
