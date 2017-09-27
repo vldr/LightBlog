@@ -33,8 +33,6 @@ Setup:
 
 ### Ubuntu 16.04 x86_64
 Setup:
-1. `apt-get update`
-2. `apt-get install libboost-all-dev`
 3. `wget https://github.com/vldr/LightBlog/raw/master/sql/sql.db`
 4. `wget https://github.com/vldr/LightBlog/raw/master/bin/lightblog.ubuntu_16_04_x64`
 5. `chmod +x lightblog.ubuntu_16_04_x64`
