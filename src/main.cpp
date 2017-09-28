@@ -31,20 +31,7 @@ int main(int argc, char* argv[])
 
 	cout << "[ vldr web app - " << __DATE__ << " ]" << std::endl;
 
-	HttpServer server(8080, 1); 
-	/*if (argc == 6) {
-		DB_HOST = argv[1];
-		DB_USER = argv[2];
-
-		if (std::string(argv[3]) == "\"\"")
-			DB_PASS = "";
-		else
-			DB_PASS = argv[3];
-		
-		DB_DB = argv[4];
-		cout << "[ Using parameters to connect... ]" << std::endl;
-		server.config.port = atoi(argv[5]);
-	}*/
+	HttpServer server(8080, 1);
 
 	std::string filename = "sql.db";
 
