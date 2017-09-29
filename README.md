@@ -6,10 +6,9 @@ LightBlog Express is a very fast, and light weight blog written in C++. This blo
 The project is based off of (https://github.com/vldr/LightBlog) and (https://github.com/eidheim/Simple-Web-Server). Successfully compiled on macOS Sierra, Ubuntu 16.04, ARM systems, and Windows 10.
 
 # Minimum Requirements
-CPU: 1.0 GHZ single-core
-MEM: 1 MB - 50 MB
-HDD: 10 MB - 100 MB 
-GPU: -
+<b>CPU</b>: 1.0 GHZ single-core<br>
+<b>MEM</b>: 1 MB - 50 MB<br>
+<b>HDD</b>: 10 MB - 100 MB <br>
 
 # Images
 <img src="http://i.imgur.com/O2mPMCJ.gif" />
