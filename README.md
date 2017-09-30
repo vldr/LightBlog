@@ -29,26 +29,29 @@ Setup:
 
 ### macOS Sierra 10.12.6 x86_64
 Setup:
-1. `curl -o sql.db https://raw.githubusercontent.com/vldr/LightBlog/master/sql/sql.db`
-2. `curl -o lightblog.macos_sierra_10_12_6_x64 https://raw.githubusercontent.com/vldr/LightBlog/master/bin/lightblog.macos_sierra_10_12_6_x64`
-3. `chmod +x lightblog.macos_sierra_10_12_6_x64`
-4. `./lightblog.macos_sierra_10_12_6_x64 DBFILENAME PORT`
+1. `svn checkout https://github.com/vldr/LightBlog/trunk/web`
+2. `curl -o sql.db https://raw.githubusercontent.com/vldr/LightBlog/master/sql/sql.db`
+3. `curl -o lightblog.macos_sierra_10_12_6_x64 https://raw.githubusercontent.com/vldr/LightBlog/master/bin/lightblog.macos_sierra_10_12_6_x64`
+4. `chmod +x lightblog.macos_sierra_10_12_6_x64`
+5. `./lightblog.macos_sierra_10_12_6_x64 DBFILENAME PORT`
 
 ### Ubuntu 16.04 x86_64
 Setup:
-1. `wget https://raw.githubusercontent.com/vldr/LightBlog/master/sql.db`
-2. `wget https://raw.githubusercontent.com/vldr/LightBlog/master/bin/lightblog.ubuntu_16_04_x64`
-3. `chmod +x lightblog.ubuntu_16_04_x64`
-4. `./lightblog.ubuntu_16_04_x64 DBFILENAME PORT`
+1. `svn checkout https://github.com/vldr/LightBlog/trunk/web`
+2. `wget https://raw.githubusercontent.com/vldr/LightBlog/master/sql.db`
+3. `wget https://raw.githubusercontent.com/vldr/LightBlog/master/bin/lightblog.ubuntu_16_04_x64`
+4. `chmod +x lightblog.ubuntu_16_04_x64`
+5. `./lightblog.ubuntu_16_04_x64 DBFILENAME PORT`
 
 ### Ubuntu 16.04 aarch64
 Setup:
 1. `apt-get update`
 2. `apt-get install libboost-all-dev`
-3. `wget https://raw.githubusercontent.com/vldr/LightBlog/master/sql/sql.db`
-4. `wget https://raw.githubusercontent.com/vldr/LightBlog/master/bin/lightblog.ubuntu_16_04_arm64`
-5. `chmod +x lightblog.ubuntu_16_04_arm64`
-6. `./lightblog.ubuntu_16_04_arm64 DBFILENAME PORT`
+3  `svn checkout https://github.com/vldr/LightBlog/trunk/web`
+4. `wget https://raw.githubusercontent.com/vldr/LightBlog/master/sql/sql.db`
+5. `wget https://raw.githubusercontent.com/vldr/LightBlog/master/bin/lightblog.ubuntu_16_04_arm64`
+6. `chmod +x lightblog.ubuntu_16_04_arm64`
+7. `./lightblog.ubuntu_16_04_arm64 DBFILENAME PORT`
 
 # Database
 LightBlog uses <b>SQLite 3</b>.
