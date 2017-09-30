@@ -21,10 +21,14 @@ http://blog.vldr.org/
 
 # Binaries
 ### Windows
-- Requires <a href="https://go.microsoft.com/fwlink/?LinkId=746572">Visual C++ Redist. 2017</a><br>
+- Requires 
 - Requires https://github.com/vldr/LightBlog/raw/master/sql/sql.db
 
-Usage: `LightBlog.exe DBFILENAME PORT`
+Setup:
+1. Download and install <a href="https://go.microsoft.com/fwlink/?LinkId=746572">Visual C++ Redist. 2017</a>
+2. Download <a href="https://github.com/vldr/LightBlog/raw/master/bin/lightblog.exe">lightblog.exe</a>.
+3. Download <a href="https://github.com/vldr/LightBlog/raw/master/sql/sql.db">sql.db</a>.
+4. Run `lightblog.exe DBFILENAME PORT`
 
 ### macOS Sierra 10.12.6 x86_64
 Setup:
