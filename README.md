@@ -29,8 +29,8 @@ Setup:
 
 ### macOS Sierra 10.12.6 x86_64
 Setup:
-1. `wget https://github.com/vldr/LightBlog/raw/master/sql/sql.db`
-2. `wget https://github.com/vldr/LightBlog/raw/master/bin/lightblog.macos_sierra_10_12_6_x64`
+1. `curl -o sql.db https://github.com/vldr/LightBlog/raw/master/sql/sql.db`
+2. `curl -o lightblog.macos_sierra_10_12_6_x64 https://github.com/vldr/LightBlog/raw/master/bin/lightblog.macos_sierra_10_12_6_x64`
 3. `chmod +x lightblog.macos_sierra_10_12_6_x64`
 4. `./lightblog.macos_sierra_10_12_6_x64 DBFILENAME PORT`
 
