@@ -47,7 +47,7 @@ Setup:
 Setup:
 1. `apt-get update`
 2. `apt-get install libboost-all-dev`
-3  `svn checkout https://github.com/vldr/LightBlog/trunk/web`
+3.  `svn checkout https://github.com/vldr/LightBlog/trunk/web`
 4. `wget https://raw.githubusercontent.com/vldr/LightBlog/master/sql/sql.db`
 5. `wget https://raw.githubusercontent.com/vldr/LightBlog/master/bin/lightblog.ubuntu_16_04_arm64`
 6. `chmod +x lightblog.ubuntu_16_04_arm64`
