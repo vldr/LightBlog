@@ -92,8 +92,8 @@ namespace bbcode{
  /U  ! </u>|\
  H   !  <h>|\
  /H  !  </h>|\
- S   ! <small>|\
- /S  ! </small>|\
+ S   ! <s>|\
+ /S  ! </s>|\
  SUB   ! <sub>|\
  /SUB  ! </sub>|\
  SUP   ! <sup>|\
