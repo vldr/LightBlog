@@ -4,7 +4,7 @@
 LightBlog is a fast and light weight blog written in C++. This blog system is portable by design and is cross-platform... Successfully compiled on macOS Sierra 10.12.6, Ubuntu 16.04, Ubuntu 16.04 ARM (aarch64), and Windows 10.
 
 # Minimum Requirements
-<b>OS</b>: Windows, Linux<br> 
+<b>OS</b>: Windows, Linux based distros., and macOS<br> 
 <b>Processor</b>: 1.0 GHZ single-core or better<br> 
 <b>Memory</b>: 1 MB - 50 MB<br>
 <b>Storage</b>: 10 MB - 100 MB available space<br>
