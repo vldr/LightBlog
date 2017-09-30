@@ -3,7 +3,7 @@
 # LightBlog
 LightBlog Express is a very fast, and light weight blog written in C++. This blog system is entirely portable and should be just a drag and drop procedure on Windows, and on Linux with a couple of steps...
 
-The project is based off of (https://github.com/vldr/LightBlog) and (https://github.com/eidheim/Simple-Web-Server). Successfully compiled on macOS Sierra, Ubuntu 16.04, ARM systems, and Windows 10.
+The project is based off of (https://github.com/vldr/LightBlog) and (https://github.com/eidheim/Simple-Web-Server). Successfully compiled on macOS Sierra 10.12.6, Ubuntu 16.04, Ubuntu 16.04 ARM, and Windows 10.
 
 # Minimum Requirements
 <b>OS</b>: Windows, Linux<br> 
@@ -28,12 +28,12 @@ http://blog.vldr.org/
 
 Usage: `LightBlog.exe DBFILENAME PORT`
 
-### macOS Sierra (xcode developer tools required) (boost)
-Setup: 
-1. `ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"`
-2. `brew install boost`
-3. `chmod +x lightblog.macos`
-4. `./lightblog.macos DB_HOST DB_USER DB_PASS DB_NAME PORT`
+### macOS Sierra 10.12.6
+Setup:
+1. `wget https://github.com/vldr/LightBlog/raw/master/sql/sql.db`
+2. `wget https://github.com/vldr/LightBlog/raw/master/bin/lightblog.macos_sierra_10_12_6_x64`
+3. `chmod +x lightblog.macos_sierra_10_12_6_x64`
+4. `./lightblog.macos_sierra_10_12_6_x64 DBFILENAME PORT`
 
 ### Ubuntu 16.04 x86_64
 Setup:
@@ -60,5 +60,3 @@ SCrypt is used for hashing passwords...
 Go to `/login` and logon to change username and pasword; 
 default username and password is:
 `admin` and `admin`
-
-
