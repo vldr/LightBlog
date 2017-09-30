@@ -21,9 +21,6 @@ http://blog.vldr.org/
 
 # Binaries
 ### Windows
-- Requires 
-- Requires https://github.com/vldr/LightBlog/raw/master/sql/sql.db
-
 Setup:
 1. Download and install <a href="https://go.microsoft.com/fwlink/?LinkId=746572">Visual C++ Redist. 2017</a>
 2. Download <a href="https://github.com/vldr/LightBlog/raw/master/bin/lightblog.exe">lightblog.exe</a>.
