@@ -247,7 +247,7 @@ std::string BlogSystem::generate_salt(int length) {
 		7, 0x9d2c5680,
 		15, 0xefc60000,
 		18, 1812433253> generator(random_value);
-	const std::uniform_int_distribution<std::string::size_type> pick(0, sizeof(chrs) - 2);
+	std::uniform_int_distribution<std::string::size_type> pick(0, sizeof(chrs) - 2);
 
 	std::string random_str;
 
@@ -1019,50 +1019,52 @@ int BlogSystem::delete_post(std::string post_id)
 
 
 int BlogSystem::hash_password(char *dst, const char *passphrase, uint32_t N, uint8_t r, uint8_t p) {
-	try {
-		uint8_t salt[SCRYPT_SALT_LEN] = {};
-		uint8_t	hashbuf[SCRYPT_HASH_LEN];
-		char outbuf[256];
-		char saltbuf[256];
+	uint8_t salt[SCRYPT_SALT_LEN] = {};
+	uint8_t	hashbuf[SCRYPT_HASH_LEN];
+	char outbuf[256];
+	char saltbuf[256];
 
-		std::string generatedSalt = generate_salt(SCRYPT_SALT_LEN);
-		if (generatedSalt == "")
-		{
-			throw std::exception("generateSalt error...");
-		}
-
-		copy(generatedSalt.begin(), generatedSalt.end(), salt);
-		salt[generatedSalt.length() - 1] = 0;
-
-		auto retval = libscrypt_scrypt(reinterpret_cast<const uint8_t*>(passphrase), strlen(passphrase),
-			static_cast<uint8_t*>(salt), SCRYPT_SALT_LEN, N, r, p, hashbuf, sizeof(hashbuf));
-		if (retval == -1)
-			throw std::exception("libscrypt_scrypt error...");
-
-		retval = libscrypt_b64_encode(static_cast<unsigned char*>(hashbuf), sizeof(hashbuf),
-			outbuf, sizeof(outbuf));
-		if (retval == -1)
-			throw std::exception("libscrypt_b64_encode error...");
-
-		retval = libscrypt_b64_encode(static_cast<unsigned char *>(salt), sizeof(salt),
-			saltbuf, sizeof(saltbuf));
-
-		if (retval == -1)
-			throw std::exception("libscrypt_b64_encode #2 error...");
-
-		retval = libscrypt_mcf(N, r, p, saltbuf, outbuf, dst);
-		if (retval != 1)
-			throw std::exception("libscrypt_mcf error...");
-
-		return 1;
-	}
-	catch (std::exception &e) {
-		std::cout << "# ERR: HASHINGEXCEPTION in " << __FILE__;
-		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << std::endl;
-		std::cout << "# ERR: " << e.what() << std::endl;
-
+	std::string generatedSalt = generate_salt(SCRYPT_SALT_LEN);
+	if (generatedSalt == "")
+	{
+		std::cout << "[ " << "generateSalt error..." << " ]";
 		return 0;
 	}
+
+	copy(generatedSalt.begin(), generatedSalt.end(), salt);
+	salt[generatedSalt.length() - 1] = 0;
+
+	auto retval = libscrypt_scrypt(reinterpret_cast<const uint8_t*>(passphrase), strlen(passphrase),
+		static_cast<uint8_t*>(salt), SCRYPT_SALT_LEN, N, r, p, hashbuf, sizeof(hashbuf));
+
+	if (retval == -1) {
+		std::cout << "[ " << "libscrypt_scrypt error..." << " ]";
+		return 0;
+	}
+
+	retval = libscrypt_b64_encode(static_cast<unsigned char*>(hashbuf), sizeof(hashbuf),
+		outbuf, sizeof(outbuf));
+	if (retval == -1) {
+		std::cout << "[ " << "libscrypt_b64_encode error..." << " ]";
+		return 0;
+	}
+
+	retval = libscrypt_b64_encode(static_cast<unsigned char *>(salt), sizeof(salt),
+		saltbuf, sizeof(saltbuf));
+
+	if (retval == -1) {
+		std::cout << "[ " << "libscrypt_b64_encode #2 error..." << " ]";
+		return 0;
+	}
+
+	retval = libscrypt_mcf(N, r, p, saltbuf, outbuf, dst);
+
+	if (retval != 1) {
+		std::cout << "[ " << "libscrypt_mcf error..." << " ]";
+		return 0;
+	}
+
+	return 1;
 }
 
 int BlogSystem::change_user_details(std::string user_input, std::string pwd_input, std::shared_ptr<HttpServer::Request> request)
