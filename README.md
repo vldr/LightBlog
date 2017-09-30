@@ -9,7 +9,7 @@ LightBlog is a fast and light weight blog written in C++. This blog system is po
 <b>Memory</b>: 1 MB - 50 MB<br>
 <b>Storage</b>: 10 MB - 100 MB available space<br>
 
-# Images
+# Media
 <img src="http://i.imgur.com/O2mPMCJ.gif" />
 
 # Demo 
