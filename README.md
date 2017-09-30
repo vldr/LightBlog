@@ -23,21 +23,21 @@ http://blog.vldr.org/
 ### Windows
 Setup:
 1. Download and install <a href="https://go.microsoft.com/fwlink/?LinkId=746572">Visual C++ Redist. 2017</a>
-2. Download <a href="https://github.com/vldr/LightBlog/raw/master/bin/lightblog.exe">lightblog.exe</a>.
-3. Download <a href="https://github.com/vldr/LightBlog/raw/master/sql/sql.db">sql.db</a>.
+2. Download <a href="https://raw.githubusercontent.com/vldr/LightBlog/master/bin/lightblog.exe">lightblog.exe</a>.
+3. Download <a href="https://raw.githubusercontent.com/vldr/LightBlog/master/sql/sql.db">sql.db</a>.
 4. Run `lightblog.exe DBFILENAME PORT`
 
 ### macOS Sierra 10.12.6 x86_64
 Setup:
-1. `curl -o sql.db https://github.com/vldr/LightBlog/raw/master/sql/sql.db`
-2. `curl -o lightblog.macos_sierra_10_12_6_x64 https://github.com/vldr/LightBlog/raw/master/bin/lightblog.macos_sierra_10_12_6_x64`
+1. `curl -o sql.db https://raw.githubusercontent.com/vldr/LightBlog/master/sql/sql.db`
+2. `curl -o lightblog.macos_sierra_10_12_6_x64 https://raw.githubusercontent.com/vldr/LightBlog/master/bin/lightblog.macos_sierra_10_12_6_x64`
 3. `chmod +x lightblog.macos_sierra_10_12_6_x64`
 4. `./lightblog.macos_sierra_10_12_6_x64 DBFILENAME PORT`
 
 ### Ubuntu 16.04 x86_64
 Setup:
-1. `wget https://github.com/vldr/LightBlog/raw/master/sql/sql.db`
-2. `wget https://github.com/vldr/LightBlog/raw/master/bin/lightblog.ubuntu_16_04_x64`
+1. `wget https://raw.githubusercontent.com/vldr/LightBlog/master/sql.db`
+2. `wget https://raw.githubusercontent.com/vldr/LightBlog/master/bin/lightblog.ubuntu_16_04_x64`
 3. `chmod +x lightblog.ubuntu_16_04_x64`
 4. `./lightblog.ubuntu_16_04_x64 DBFILENAME PORT`
 
@@ -45,8 +45,8 @@ Setup:
 Setup:
 1. `apt-get update`
 2. `apt-get install libboost-all-dev`
-3. `wget https://github.com/vldr/LightBlog/raw/master/sql/sql.db`
-4. `wget https://github.com/vldr/LightBlog/raw/master/bin/lightblog.ubuntu_16_04_arm64`
+3. `wget https://raw.githubusercontent.com/vldr/LightBlog/master/sql/sql.db`
+4. `wget https://raw.githubusercontent.com/vldr/LightBlog/master/bin/lightblog.ubuntu_16_04_arm64`
 5. `chmod +x lightblog.ubuntu_16_04_arm64`
 6. `./lightblog.ubuntu_16_04_arm64 DBFILENAME PORT`
 
