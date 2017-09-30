@@ -70,6 +70,7 @@ a:hover{
     outline: 0;
     border: 1px solid rgba(0, 0, 0, 0.10);
     background-color: #383838;
+	width: 100%;
     color: white;
     padding: 10px;
     -webkit-border-radius: 2px;
@@ -88,8 +89,6 @@ a:hover{
     margin-bottom: 5px;
 }
 .settings-modal {
-	
-	
     display: none;
     position: fixed;
     z-index: 1; 
@@ -99,7 +98,7 @@ a:hover{
     height: 100%; 
 	overflow: auto;
 	
-	background-color: #313131;
+	background-color: rgba(49, 49, 49, 0.95);
 	
 	-webkit-animation-name: zoom;
     -webkit-animation-duration: 0.3s;
@@ -142,6 +141,31 @@ a:hover{
 
 #settings-modal-content > div {
     display:none;
+}
+
+::-webkit-scrollbar {
+    width: 5px;
+}
+ 
+::-webkit-scrollbar-track {
+    -webkit-border-radius: 10px;
+    border-radius: 10px;
+}
+ 
+::-webkit-scrollbar-thumb {
+    -webkit-border-radius: 5px;
+    border-radius: 5px;
+    background: rgba(0,0,0,0.2); 
+}
+
+::-webkit-resizer {
+  background-color: #383838;
+  outline:0;
+}
+
+::-webkit-scrollbar-corner  {
+  background-color: #383838;
+  outline:0;
 }
 
 .settings-modal-open { 
@@ -188,6 +212,25 @@ a:hover{
     cursor: pointer;
 }
 
+@media only screen and (max-width: 700px){
+    .settings-modal-left {
+        width: 100%;
+    }
+	
+	.settings-modal-right {
+        width: 100%;
+    }
+	
+	.settings-modal li a {
+		float:left;
+		margin:0;
+	}
+	
+	.settings-modal ul {
+		margin:0 auto;
+	}
+}
+
 #close {
 	display: none;
 }
@@ -201,6 +244,28 @@ a:hover{
     color: black;
     padding: 10px 0;
     height: 150px;
+}
+
+input[type=submit] {
+    border: 1px solid rgb(74, 73, 73);
+    color: #d2d2d2;
+    background-color: #6a6b6a;
+    background-image: linear-gradient(-180deg, #545454 0%, #3a3939 90%);
+    outline: 0;
+    padding: 10px 30px;
+    cursor: pointer;
+    border-radius: 3px;
+    -o-transition: .5s;
+    -ms-transition: .5s;
+    -moz-transition: .5s;
+    -webkit-transition: .5s;
+    transition: .5s;
+}
+input[type=submit]:hover {
+    background: #3a3939;
+}
+input[type=submit]:active {
+    background: #656565;
 }
 
 @-webkit-keyframes zoom {
@@ -322,6 +387,14 @@ a:hover{
 .postContent{
 	color: black;
 	text-align: left;
+}
+
+.postContent p {
+	white-space: pre-wrap;
+    white-space: -moz-pre-wrap;
+    white-space: -pre-wrap;
+    white-space: -o-pre-wrap;
+    word-wrap: break-word;  
 }
 
 .postContent img{
