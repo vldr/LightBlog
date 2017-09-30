@@ -38,7 +38,7 @@ Setup:
 ### Ubuntu 16.04 x86_64
 Setup:
 1. `svn checkout https://github.com/vldr/LightBlog/trunk/web`
-2. `wget https://raw.githubusercontent.com/vldr/LightBlog/master/sql.db`
+2. `wget https://raw.githubusercontent.com/vldr/LightBlog/master/sql/sql.db`
 3. `wget https://raw.githubusercontent.com/vldr/LightBlog/master/bin/lightblog.ubuntu_16_04_x64`
 4. `chmod +x lightblog.ubuntu_16_04_x64`
 5. `./lightblog.ubuntu_16_04_x64 DBFILENAME PORT`
