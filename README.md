@@ -53,6 +53,10 @@ Setup:
 6. `chmod +x lightblog.ubuntu_16_04_arm64`
 7. `./lightblog.ubuntu_16_04_arm64 DBFILENAME PORT`
 
+# Benchmark
+8000 hits per second sustained (higher would require better network)
+<img src="https://i.imgur.com/VTvNtLk.png" />
+
 # Database
 LightBlog uses <b>SQLite 3</b>.
 
