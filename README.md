@@ -55,7 +55,7 @@ Setup:
 
 # Benchmark
 8000 hits per second sustained (higher would require better network)
-<img src="https://i.imgur.com/VTvNtLk.png" />
+<img src="https://i.imgur.com/Uqe5wjU.png" />
 
 # Database
 LightBlog uses <b>SQLite 3</b>.
