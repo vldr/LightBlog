@@ -54,7 +54,7 @@ Setup:
 7. `./lightblog.ubuntu_16_04_arm64 DBFILENAME PORT`
 
 # Benchmark
-8000 hits per second sustained (higher would require better network)
+~10,000 hits per second sustained (higher would require better network or load balancing)
 <img src="https://i.imgur.com/Uqe5wjU.png" />
 
 # Database
