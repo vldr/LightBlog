@@ -8,6 +8,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w -std=c++14")
 include_directories(.)
 
 find_package(Threads REQUIRED)
+find_package(ZLIB REQUIRED)
 
 set(BOOST_COMPONENTS system thread filesystem date_time)
 
@@ -25,6 +26,10 @@ if(APPLE)
 endif()
 
 add_executable(lightblog main.cpp blog.cpp sqlite3.c scrypt/b64.cpp scrypt/crypto_scrypt-check.cpp scrypt/crypto_scrypt-hexconvert.cpp scrypt/crypto_scrypt-nosse.cpp scrypt/crypto-mcf.cpp scrypt/sha256.cpp scrypt/slowequals.cpp bbcode/bbcode_lexer.cpp bbcode/bbcode_parser.cpp bbcode/bbcode_utils.cpp)
+
+include_directories( ${ZLIB_INCLUDE_DIRS} )
+target_link_libraries( lightblog ${ZLIB_LIBRARIES} )
+
 target_link_libraries(lightblog ${CMAKE_DL_LIBS})
 target_link_libraries(lightblog ${Boost_LIBRARIES})
 target_link_libraries(lightblog ${CMAKE_THREAD_LIBS_INIT})
