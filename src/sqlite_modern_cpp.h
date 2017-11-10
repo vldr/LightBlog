@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cctype>
 #include <string>
-#include <functional>
+#include <functional> 
 #include <ctime>
 #include <tuple>
 #include <memory>

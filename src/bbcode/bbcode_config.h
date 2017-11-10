@@ -126,7 +126,7 @@ namespace bbcode{
  /URL  ! </a>|\
  PRE  ! <pre>|\
  /PRE  ! </pre>|\
-  CODE  ! <code style=\"background-color: #d2d2d2;border-radius: 3px;padding: 1px;\">|\
+  CODE  ! <code class=\"code\">|\
  /CODE  ! </code>|\
   IMG  ! <img src=\"$IMG\" target=\"_blank\" title=\"$TITLE\" style=\"color:white;\"><a style=\"display:none;\">|\
  /IMG  ! </a></img>|\
@@ -141,12 +141,12 @@ namespace bbcode{
  HR  ! <BR>|\
  QUOTE  ! <div style=\"margin:20px; margin-top:5px;\"><div style=\"margin-bottom:2px\">Quote:</div><table cellpadding=\"3\" cellspacing=\"0\" border=\"0\" width=\"100%\"><tr><td style=\"border:1px inset\"><div><strong>$QUOTE</strong> wrote:</div><div style=\"font-style:italic\">|\
  /QUOTE  ! </div></td></tr></table></div>|";
-	const string _SHEMA_DELIMITER								= "|";
+ 	const string _SHEMA_DELIMITER								= "|";
 	const string _SHEMA_TAG_DELIMITER							= "!";
 	const string _COLON											= ":";
 
 	const string _BBTAG_IS_UNAVAILABLE_RET					    = "";	
-	const string _SCHEMA_MACRO_PREFIX							= "$";
+	const string _SCHEMA_MACRO_PREFIX							= "$"; 
 
 	const size_t _MAXIMUM_PROTO_LENGTH							= 6;
 		
