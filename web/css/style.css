@@ -13,6 +13,12 @@ a:hover{
 	color: #000;
 }
 
+.code {
+	background-color: #d2d2d2;
+	border-radius: 3px;
+	padding: 1px;
+}
+
 .editPostButton {
 	color: block;
 	float: left;
