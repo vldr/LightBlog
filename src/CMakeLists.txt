@@ -2,16 +2,15 @@ cmake_minimum_required (VERSION 2.8.8)
 project (LightBlog)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w -std=c++14")
 
-## Yeah, fuck it... 
-## set(Boost_USE_STATIC_LIBS ON)
 
 include_directories(.)
 
+
+
 find_package(Threads REQUIRED)
-find_package(ZLIB REQUIRED)
 
-set(BOOST_COMPONENTS system thread filesystem date_time)
-
+set(BOOST_COMPONENTS system thread filesystem date_time iostreams)
+# Late 2017 TODO: remove the following checks and always use std::regex
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
         set(BOOST_COMPONENTS ${BOOST_COMPONENTS} regex)
@@ -21,20 +20,26 @@ endif()
 find_package(Boost 1.53.0 COMPONENTS ${BOOST_COMPONENTS} REQUIRED)
 include_directories(SYSTEM ${Boost_INCLUDE_DIR})
 
+find_package( ZLIB REQUIRED )
+
 if(APPLE)
     set(OPENSSL_ROOT_DIR "/usr/local/opt/openssl")
 endif()
 
 add_executable(lightblog main.cpp blog.cpp sqlite3.c scrypt/b64.cpp scrypt/crypto_scrypt-check.cpp scrypt/crypto_scrypt-hexconvert.cpp scrypt/crypto_scrypt-nosse.cpp scrypt/crypto-mcf.cpp scrypt/sha256.cpp scrypt/slowequals.cpp bbcode/bbcode_lexer.cpp bbcode/bbcode_parser.cpp bbcode/bbcode_utils.cpp)
 
-include_directories( ${ZLIB_INCLUDE_DIRS} )
-target_link_libraries( lightblog ${ZLIB_LIBRARIES} )
+include_directories(lightblog ${ZLIB_INCLUDE_DIRS} )
+target_link_libraries(lightblog ${ZLIB_LIBRARIES} )
 
 target_link_libraries(lightblog ${CMAKE_DL_LIBS})
 target_link_libraries(lightblog ${Boost_LIBRARIES})
 target_link_libraries(lightblog ${CMAKE_THREAD_LIBS_INIT})
 
+
+
+#TODO: add requirement for version 1.0.1g (can it be done in one line?)
 find_package(OpenSSL)
+
 
 if(MSYS) #TODO: Is MSYS true when MSVC is true?
     target_link_libraries(lightblog ws2_32 wsock32)
