@@ -1,16 +1,21 @@
 #pragma once
+
 #include "server_http.h"
-#include "client_http.h"
 
 #include <sstream>
 #include <map>
+#include <random>
 #include <codecvt>
-#include <fstream>
+#include <fstream> 
+#include <iomanip>
 
 #include <boost/functional/hash.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/iostreams/filtering_streambuf.hpp>
+#include <boost/iostreams/copy.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
 
 #include <boost/regex/pending/unicode_iterator.hpp>
 #include <boost/spirit/include/qi.hpp>
@@ -18,8 +23,13 @@
 #include "scrypt/libscrypt.h"
 #include "scrypt/b64.h"
 
-typedef HTTPExServer::Server<HTTPExServer::HTTP> HttpServer;
-typedef HTTPExServer::Client<HTTPExServer::HTTP> HttpClient;
+#define BOOST_SPIRIT_THREADSAFE 
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/random/uniform_int_distribution.hpp>
+
+typedef HTTPExServer::Server<HTTPExServer::HTTP> HttpServer; 
 
 class BlogSystem
 {
@@ -32,6 +42,8 @@ public:
 		author,
 		postdate
 	};
+
+	typedef std::map<std::string, std::string> PostData;
 	 
 	BlogSystem(std::string dbfilename);
 
@@ -44,6 +56,7 @@ public:
 	std::string create_session(std::string username, std::shared_ptr<HttpServer::Request> request);
 
 	void send_page(std::shared_ptr<HttpServer::Request> request, std::shared_ptr<HttpServer::Response> response, std::string ss);
+	void send_page_encoded(std::shared_ptr<HttpServer::Request> request, std::shared_ptr<HttpServer::Response> response, std::string ss);
 	void send_page404(std::shared_ptr<HttpServer::Request> request, std::shared_ptr<HttpServer::Response> response, std::string ss);
 
 	void process_logout_get(std::shared_ptr<HttpServer::Request> request, std::shared_ptr<HttpServer::Response> response);
@@ -54,6 +67,7 @@ public:
 	void process_login_post(std::shared_ptr<HttpServer::Request> request, std::shared_ptr<HttpServer::Response> response);
 	void process_post_post(std::shared_ptr<HttpServer::Request> request, std::shared_ptr<HttpServer::Response> response);
 	void process_change_post(std::shared_ptr<HttpServer::Request> request, std::shared_ptr<HttpServer::Response> response);
+	std::map<std::string, std::string> get_post_data(std::shared_ptr<HttpServer::Request> request);
 	void process_edit_post(std::shared_ptr<HttpServer::Request> request, std::shared_ptr<HttpServer::Response> response);
 	void process_delete_post(std::shared_ptr<HttpServer::Request> request, std::shared_ptr<HttpServer::Response> response);
 
@@ -61,13 +75,15 @@ public:
 	std::string get_post_information_by_id(std::string post_id, int info);
 	void add_controls_general(std::shared_ptr<HttpServer::Request> request, std::stringstream & ss);
 	void add_controls_view(std::shared_ptr<HttpServer::Request> request, std::stringstream & ss, std::string post_id);
+	static std::string compress(const std::string & data);
+	std::string truncate(std::string str, size_t width, bool show_ellipsis);
 	std::stringstream get_this_post(std::shared_ptr<HttpServer::Request> request, std::string post_id);
 	std::stringstream find_post(std::shared_ptr<HttpServer::Request> request, std::string searchparam);
 
 	std::string get_session_cookie(std::shared_ptr<HttpServer::Request> request);
 	int create_post(std::string title, std::string content, std::string author);
 	int update_post(std::string post_id, std::string title, std::string content, std::string author);
-	int delete_post(std::string post_id);
+	int delete_post(std::string post_id); 
 
 	int hash_password(char * dst, const char * passphrase, uint32_t N, uint8_t r, uint8_t p);
 	int change_user_details(std::string user_input, std::string pwd_input, std::shared_ptr<HttpServer::Request> request);
@@ -76,102 +92,47 @@ public:
 	int get_user_id(std::string user_input);
 
 	std::stringstream parse_blob(std::istream* blob);
-
-	const signed char HEX2DEC[256] =
+	 
+	std::string uri_decode(const std::string& in)
 	{
-		/*       0  1  2  3   4  5  6  7   8  9  A  B   C  D  E  F */
-		/* 0 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-		/* 1 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-		/* 2 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-		/* 3 */  0, 1, 2, 3,  4, 5, 6, 7,  8, 9,-1,-1, -1,-1,-1,-1,
+		std::string out = ""; 
 
-		/* 4 */ -1,10,11,12, 13,14,15,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-		/* 5 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-		/* 6 */ -1,10,11,12, 13,14,15,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-		/* 7 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-
-		/* 8 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-		/* 9 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-		/* A */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-		/* B */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-
-		/* C */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-		/* D */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-		/* E */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-		/* F */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1
-	};
-
-	std::string uri_decode(const std::string & sSrc)
-	{
-		const unsigned char * pSrc = (const unsigned char *)sSrc.c_str();
-		const size_t SRC_LEN = sSrc.length();
-		const unsigned char * const SRC_END = pSrc + SRC_LEN;
-		const unsigned char * const SRC_LAST_DEC = SRC_END - 2;
-
-		char * const pStart = new char[SRC_LEN];
-		char * pEnd = pStart;
-
-		while (pSrc < SRC_LAST_DEC)
+		out.clear();
+		out.reserve(in.size());
+		for (std::size_t i = 0; i < in.size(); ++i)
 		{
-			if (*pSrc == '%')
+			if (in[i] == '%')
 			{
-				char dec1, dec2;
-				if (-1 != (dec1 = HEX2DEC[*(pSrc + 1)])
-					&& -1 != (dec2 = HEX2DEC[*(pSrc + 2)]))
+				if (i + 3 <= in.size())
 				{
-					*pEnd++ = (dec1 << 4) + dec2;
-					pSrc += 3;
-					continue;
+					int value = 0;
+					std::istringstream is(in.substr(i + 1, 2));
+					if (is >> std::hex >> value)
+					{
+						out += static_cast<char>(value);
+						i += 2;
+					}
+					else
+					{
+						return out;
+					}
+				}
+				else
+				{
+					return out;
 				}
 			}
-
-			*pEnd++ = *pSrc++;
-		}
-
-		// the last 2- chars
-		while (pSrc < SRC_END)
-			*pEnd++ = *pSrc++;
-
-		std::string sResult(pStart, pEnd);
-		delete[] pStart;
-
-		return sResult;
-	}
-
-	std::wstring wide_uri_decode(const std::string & sSrc)
-	{
-		const unsigned char * pSrc = (const unsigned char *)sSrc.c_str();
-		const size_t SRC_LEN = sSrc.length();
-		const unsigned char * const SRC_END = pSrc + SRC_LEN;
-		const unsigned char * const SRC_LAST_DEC = SRC_END - 2;
-
-		char * const pStart = new char[SRC_LEN];
-		char * pEnd = pStart;
-
-		while (pSrc < SRC_LAST_DEC)
-		{
-			if (*pSrc == '%')
+			else if (in[i] == '+')
 			{
-				char dec1, dec2;
-				if (-1 != (dec1 = HEX2DEC[*(pSrc + 1)])
-					&& -1 != (dec2 = HEX2DEC[*(pSrc + 2)]))
-				{
-					*pEnd++ = (dec1 << 4) + dec2;
-					pSrc += 3;
-					continue;
-				}
+				out += ' ';
 			}
+			else
+			{
+				out += in[i];
+			}
+		} 
 
-			*pEnd++ = *pSrc++;
-		}
-
-		// the last 2- chars
-		while (pSrc < SRC_END)
-			*pEnd++ = *pSrc++;
-
-		std::wstring sResult(pStart, pEnd);
-		delete[] pStart;
-		return sResult;
+		return out;
 	}
 
 	const std::string CACHEHOME = "home";
@@ -185,4 +146,4 @@ public:
 protected:
 	
 	std::string filename = "sql.db";
-};
+}; 

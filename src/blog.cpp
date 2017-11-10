@@ -104,11 +104,17 @@ std::string BlogSystem::create_session(std::string username, std::shared_ptr<Htt
 
 void BlogSystem::send_page(std::shared_ptr<HttpServer::Request> request, std::shared_ptr<HttpServer::Response> response, std::string ss)
 {
-	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << ss.length() << "\r\n\r\n" << ss.c_str();
+	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << ss.length() << "\r\nContent-Type: text/html; charset=utf-8" << "\r\n\r\n" << ss.c_str();
+}
+
+void BlogSystem::send_page_encoded(std::shared_ptr<HttpServer::Request> request, std::shared_ptr<HttpServer::Response> response, std::string ss)
+{
+	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << ss.length() << "\r\nContent-Encoding: gzip\r\nContent-Type: text/html; charset=utf-8" << "\r\n\r\n" << ss;
 }
 
 void BlogSystem::send_page404(std::shared_ptr<HttpServer::Request> request, std::shared_ptr<HttpServer::Response> response, std::string ss)
 {
+	
 	*response << "HTTP/1.1 404 Not found\r\nContent-Length: " << ss.length() << "\r\n\r\n" << ss;
 }
 
@@ -188,6 +194,28 @@ void BlogSystem::process_login_get(std::shared_ptr<HttpServer::Request> request,
 	send_page(request, response, jj.str());
 }
 
+std::map<std::string, std::string> BlogSystem::get_post_data(std::shared_ptr<HttpServer::Request> request) {
+	std::string s = request->content.string();
+	std::map<std::string, std::string> map;
+	std::vector<std::string> words;
+
+	boost::split(words, s, boost::is_any_of("&"), boost::token_compress_on);
+
+	for (auto& query : words) {
+		std::string value;
+
+		const auto position_of_equals = query.find("=");
+		const auto key = query.substr(0, position_of_equals);
+
+		if (position_of_equals != std::string::npos)
+			value = query.substr(position_of_equals + 1);
+
+		map[key] = value;
+	}
+
+	return map;
+}
+
 std::string BlogSystem::generate_salt(int length) {
 #ifdef _WIN32
 	HCRYPTPROV hProvider = 0;
@@ -263,37 +291,11 @@ void BlogSystem::process_login_post(std::shared_ptr<HttpServer::Request> request
 {
 	std::stringstream content;
 
-	std::vector<std::string> words;
-	std::string s = request->content.string();
-	boost::split(words, s, boost::is_any_of("&"), boost::token_compress_on); 
+	PostData pd = get_post_data(request);  
 
-	std::string username;
-	std::string password;
-
-	for (auto& query : words) {
-		std::string value;
-
-		const auto position_of_equals = query.find("=");
-		const auto key = query.substr(0, position_of_equals);
-
-		if (position_of_equals != std::string::npos)
-			value = query.substr(position_of_equals + 1);
-
-		if (key == "username") {
-			std::replace(value.begin(), value.end(), '+', ' ');
-			value = uri_decode(value);
-
-			username = value;
-		}
-
-		if (key == "password") {
-			std::replace(value.begin(), value.end(), '+', ' ');
-			value = uri_decode(value);
-
-			password = value;
-		}
-	}
-
+	std::string username = uri_decode(pd["username"]);
+	std::string password = uri_decode(pd["password"]);
+	 
 	if (process_login(username, password) == 1) {
 		const std::string random_str = create_session(username, request);
 
@@ -310,36 +312,10 @@ void BlogSystem::process_post_post(std::shared_ptr<HttpServer::Request> request,
 {
 	std::stringstream content;
 
-	std::vector<std::string> words;
-	std::string s = request->content.string();
-	boost::split(words, s, boost::is_any_of("&"), boost::token_compress_on);
+	PostData pd = get_post_data(request);
 
-	std::string title;
-	std::string con;
-
-	for (auto& query : words) {
-		std::string value;
-
-		const auto position_of_equals = query.find("=");
-		const auto key = query.substr(0, position_of_equals);
-
-		if (position_of_equals != std::string::npos)
-			value = query.substr(position_of_equals + 1);
-
-		if (key == "content") {
-			std::replace(value.begin(), value.end(), '+', ' ');
-			value = uri_decode(value);
-
-			con = value;
-		}
-
-		if (key == "title") {
-			std::replace(value.begin(), value.end(), '+', ' ');
-			value = uri_decode(value);
-
-			title = value;
-		}
-	}
+	std::string title = uri_decode(pd["title"]);
+	std::string con = uri_decode(pd["content"]);
 
 	if (!is_logged_in(request)) {
 		send_page(request, response, "You must be logged in to perform this action...");
@@ -357,36 +333,10 @@ void BlogSystem::process_change_post(std::shared_ptr<HttpServer::Request> reques
 {
 	std::stringstream content;
 
-	std::vector<std::string> words;
-	std::string s = request->content.string();
-	boost::split(words, s, boost::is_any_of("&"), boost::token_compress_on);
+	PostData pd = get_post_data(request);
 
-	std::string newPassword = "";
-	std::string newUsername = "";
-
-	for (auto& query : words) {
-		std::string value;
-
-		const auto position_of_equals = query.find("=");
-		const auto key = query.substr(0, position_of_equals);
-
-		if (position_of_equals != std::string::npos)
-			value = query.substr(position_of_equals + 1);
-
-		if (key == "pass") {
-			std::replace(value.begin(), value.end(), '+', ' ');
-			value = uri_decode(value);
-
-			newPassword = value;
-		}
-
-		if (key == "user") {
-			std::replace(value.begin(), value.end(), '+', ' ');
-			value = uri_decode(value);
-
-			newUsername = value;
-		}
-	}
+	std::string newPassword = uri_decode(pd["pass"]);
+	std::string newUsername = uri_decode(pd["user"]);
 
 	if (!is_logged_in(request)) {
 		send_page(request, response, "You must be logged in to perform this action...");
@@ -407,45 +357,12 @@ void BlogSystem::process_change_post(std::shared_ptr<HttpServer::Request> reques
 void BlogSystem::process_edit_post(std::shared_ptr<HttpServer::Request> request, std::shared_ptr<HttpServer::Response> response)
 {
 	std::stringstream content;
+	
+	PostData pd = get_post_data(request);
 
-	std::vector<std::string> words;
-	std::string s = request->content.string();
-	boost::split(words, s, boost::is_any_of("&"), boost::token_compress_on);
-
-	std::string title;
-	std::string con;
-	std::string post_id;
-
-	for (auto& query : words) {
-		std::string value;
-
-		const auto position_of_equals = query.find("=");
-		const auto key = query.substr(0, position_of_equals);
-
-		if (position_of_equals != std::string::npos)
-			value = query.substr(position_of_equals + 1);
-
-		if (key == "post_id") {
-			std::replace(value.begin(), value.end(), '+', ' ');
-			value = uri_decode(value);
-
-			post_id = value;
-		}
-
-		if (key == "content") {
-			std::replace(value.begin(), value.end(), '+', ' ');
-			value = uri_decode(value);
-
-			con = value;
-		}
-
-		if (key == "title") {
-			std::replace(value.begin(), value.end(), '+', ' ');
-			value = uri_decode(value);
-
-			title = value;
-		}
-	}
+	std::string title = uri_decode(pd["title"]);
+	std::string con = uri_decode(pd["content"]);
+	std::string post_id = pd["post_id"]; 
 
 	if (!is_logged_in(request)) {
 		send_page(request, response, "You must be logged in to perform this action...");
@@ -458,37 +375,16 @@ void BlogSystem::process_edit_post(std::shared_ptr<HttpServer::Request> request,
 		send_page(request, response, "1");
 	else
 		send_page(request, response, "0");
-}
+} 
 
 
 void BlogSystem::process_delete_post(std::shared_ptr<HttpServer::Request> request, std::shared_ptr<HttpServer::Response> response)
 {
 	std::stringstream content;
 
-	std::vector<std::string> words;
-	std::string s = request->content.string();
-	boost::split(words, s, boost::is_any_of("&"), boost::token_compress_on);
+	PostData pd = get_post_data(request);
 
-	std::string title;
-	std::string con;
-	std::string post_id;
-
-	for (auto& query : words) {
-		std::string value;
-
-		const auto position_of_equals = query.find("=");
-		const auto key = query.substr(0, position_of_equals);
-
-		if (position_of_equals != std::string::npos)
-			value = query.substr(position_of_equals + 1);
-
-		if (key == "post_id") {
-			std::replace(value.begin(), value.end(), '+', ' ');
-			value = uri_decode(value);
-
-			post_id = value;
-		}
-	}
+	std::string post_id = pd["post_id"];
 
 	if (!is_logged_in(request)) {
 		send_page(request, response, "You must be logged in to perform this action...");
@@ -500,8 +396,7 @@ void BlogSystem::process_delete_post(std::shared_ptr<HttpServer::Request> reques
 	else
 		send_page(request, response, "0");
 }
-
-
+ 
 std::stringstream BlogSystem::parse_blob(std::istream* blob) {
 	std::istream* content_parsed = blob;
 
@@ -525,7 +420,7 @@ std::stringstream BlogSystem::get_posts(std::shared_ptr<HttpServer::Request> req
 		int count = 0;
 		db << "select count(*) from posts;" >> count;
 
-		if (count <= 0) {
+		if (count <= 0) { 
 			add_controls_general(request, ss);
 			ss << "<br><br><center>No posts...<center>";
 			cache.erase(CACHEHOME + std::to_string(page));
@@ -540,7 +435,7 @@ std::stringstream BlogSystem::get_posts(std::shared_ptr<HttpServer::Request> req
 			std::stringstream s(content);
 
 			bbcode::parser bbparser;
-			bbparser.source_stream(s);
+			bbparser.source_stream(s); 
 			bbparser.parse();
 
 			ss << R"V0G0N(
@@ -549,7 +444,7 @@ std::stringstream BlogSystem::get_posts(std::shared_ptr<HttpServer::Request> req
 							<a class="postTitle" href="view/)V0G0N" << id << "\">" << title << R"V0G0N(</a>
 							<span class="postDate">)V0G0N" << postdate << R"V0G0N(</span>
 						</div>
-						<div class="postContent"><p>)V0G0N" << bbparser.content() << R"V0G0N(</p></div>
+						<div class="postContent"><p>)V0G0N" << truncate(bbparser.content(), 2024, true) << R"V0G0N(</p></div>
 						<div class="postFooter">
 							<span class="postAuthor">)V0G0N" << author << R"V0G0N(</span>
 						</div>
@@ -569,7 +464,7 @@ std::stringstream BlogSystem::get_posts(std::shared_ptr<HttpServer::Request> req
 				ss << "<a href=\"/" << (page - 1) << "\"><div class=\"backButton\">Back</div></a>";
 		}
 
-		cache[CACHEHOME + std::to_string(page)] = ss.str();
+		cache[CACHEHOME + std::to_string(page)] = compress(ss.str());
 		add_controls_general(request, ss);
 
 	}
@@ -618,7 +513,7 @@ std::string BlogSystem::get_post_information_by_id(std::string post_id, int info
 		default:
 			ss << "unknown codon";
 			break;
-		}
+		} 
 
 		return ss.str();
 	}
@@ -627,7 +522,7 @@ std::string BlogSystem::get_post_information_by_id(std::string post_id, int info
 		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << std::endl;
 		std::cout << "# ERR: " << e.what() << std::endl;
 
-		return "database server failure";
+		return "database server failure"; 
 	}
 }
 
@@ -763,6 +658,31 @@ void BlogSystem::add_controls_view(std::shared_ptr<HttpServer::Request> request,
 
 }
 
+std::string BlogSystem::compress(const std::string& data)
+{
+	namespace bio = boost::iostreams;
+
+	std::stringstream compressed;
+	std::stringstream origin(data);
+
+	bio::filtering_streambuf<bio::input> out;
+	out.push(bio::gzip_compressor(bio::gzip_params(bio::gzip::best_compression)));
+	out.push(origin);
+	bio::copy(out, compressed);
+
+	return compressed.str();
+}
+
+std::string BlogSystem::truncate(std::string str, size_t width, bool show_ellipsis = true)
+{
+	if (str.length() > width)
+		if (show_ellipsis)
+			return str.substr(0, width) + "...";
+		else
+			return str.substr(0, width);
+	return str;
+}
+
 std::stringstream BlogSystem::get_this_post(std::shared_ptr<HttpServer::Request> request, std::string post_id)
 {
 	std::stringstream ss;
@@ -809,7 +729,7 @@ std::stringstream BlogSystem::get_this_post(std::shared_ptr<HttpServer::Request>
 				)V0G0N";
 		};
 
-		cache[post_id] = ss.str();
+		cache[post_id] = compress(ss.str());
 		add_controls_view(request, ss, post_id);
 
 	}
@@ -851,7 +771,7 @@ std::stringstream BlogSystem::find_post(std::shared_ptr<HttpServer::Request> req
 							<a class="postTitle" href="view/)V0G0N" << id << "\">" << title << R"V0G0N(</a>
 							<span class="postDate">)V0G0N" << postdate << R"V0G0N(</span>
 						</div>
-						<div class="postContent"><p>)V0G0N" << bbparser.content() << R"V0G0N(</p></div>
+						<div class="postContent"><p>)V0G0N" << truncate(bbparser.content(), 2024, true) << R"V0G0N(</p></div>
 						<div class="postFooter">
 							<span class="postAuthor">)V0G0N" << author << R"V0G0N(</span>
 						</div>
