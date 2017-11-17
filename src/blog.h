@@ -43,6 +43,13 @@ public:
 		postdate
 	};
 
+	enum anticodons : int
+	{
+		username,
+		nickname,
+		password
+	};
+
 	typedef std::map<std::string, std::string> PostData;
 	 
 	BlogSystem(std::string dbfilename);
@@ -71,6 +78,8 @@ public:
 	void process_edit_post(std::shared_ptr<HttpServer::Request> request, std::shared_ptr<HttpServer::Response> response);
 	void process_delete_post(std::shared_ptr<HttpServer::Request> request, std::shared_ptr<HttpServer::Response> response);
 
+	std::string get_user_info(std::string username, int info);
+
 	std::stringstream get_posts(std::shared_ptr<HttpServer::Request> rq, int page = 0);
 	std::string get_post_information_by_id(std::string post_id, int info);
 	void add_controls_general(std::shared_ptr<HttpServer::Request> request, std::stringstream & ss);
@@ -86,14 +95,14 @@ public:
 	int delete_post(std::string post_id); 
 
 	int hash_password(char * dst, const char * passphrase, uint32_t N, uint8_t r, uint8_t p);
-	int change_user_details(std::string user_input, std::string pwd_input, std::shared_ptr<HttpServer::Request> request);
+	int change_user_details(std::string user_input, std::string pwd_input, std::string nickname, std::shared_ptr<HttpServer::Request> request);
 	int process_login(std::string user, std::string pwd);
 
 	int get_user_id(std::string user_input);
 
 	std::stringstream parse_blob(std::istream* blob);
 	 
-	std::string uri_decode(const std::string& in)
+	inline std::string uri_decode(const std::string& in)
 	{
 		std::string out = ""; 
 

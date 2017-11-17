@@ -21,6 +21,7 @@ BlogSystem::BlogSystem(std::string filename)
 		db << "create table if not exists users ("
 			"   id integer primary key autoincrement not null,"
 			"   username text,"
+			"   nickname text,"
 			"   pass text"
 			");";
 
@@ -338,6 +339,7 @@ void BlogSystem::process_change_post(std::shared_ptr<HttpServer::Request> reques
 
 	std::string newPassword = uri_decode(pd["pass"]);
 	std::string newUsername = uri_decode(pd["user"]);
+	std::string newNickname = uri_decode(pd["nick"]);
 
 	if (!is_logged_in(request)) {
 		send_page(request, response, "You must be logged in to perform this action...");
@@ -349,7 +351,7 @@ void BlogSystem::process_change_post(std::shared_ptr<HttpServer::Request> reques
 		return;
 	}
 
-	if (change_user_details(newUsername, newPassword, request))
+	if (change_user_details(newUsername, newPassword, newNickname, request))
 		send_page(request, response, "1");
 	else
 		send_page(request, response, "0");
@@ -527,6 +529,48 @@ std::string BlogSystem::get_post_information_by_id(std::string post_id, int info
 	}
 }
 
+std::string BlogSystem::get_user_info(std::string username, int info)
+{ 
+	std::stringstream ss;
+	try {
+		sqlite::database db(this->filename);
+
+		int count = 0;
+		db << "select count(*) from users where username=?;"
+			<< username
+			>> count;
+
+		if (count != 1) {
+			return "error - user not found...";
+		}
+
+		switch (info)
+		{
+		case anticodons::username:
+			db << "select username from users where username=? ;" << username >> [&](std::string content) { ss << content; };
+			break;
+		case anticodons::nickname:
+			db << "select nickname from users where username=? ;" << username >> [&](std::string content) { ss << content; };
+			break;
+		case anticodons::password:
+			db << "select pass from posts where username=? ;" << username >> [&](std::string content) { ss << content; };
+			break;
+		default:
+			ss << "unknown anticodon";
+			break;
+		} 
+
+		return ss.str();
+	}
+	catch (std::exception &e) {
+		std::cout << "# ERR: SQLException in " << __FILE__;
+		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << std::endl;
+		std::cout << "# ERR: " << e.what() << std::endl;
+
+		return "database server failure"; 
+	}
+}
+
 void BlogSystem::add_controls_general(std::shared_ptr<HttpServer::Request> request, std::stringstream &ss) {
 	if (is_logged_in(request)) {
 		ss << R"V0G0N(
@@ -566,6 +610,9 @@ void BlogSystem::add_controls_general(std::shared_ptr<HttpServer::Request> reque
 									<h1>Username:</h1>
 									<input class="textbox-other" type="text" name="user" value=")V0G0N" << sessions[get_session_cookie(request)] << R"V0G0N(">
 								
+									<h1>Nickname:</h1>
+									<input class="textbox-other" type="text" name="nick" value=")V0G0N" << get_user_info(sessions[get_session_cookie(request)], anticodons::nickname) << R"V0G0N("><br><br>
+
 									<h1>Password:</h1>
 								
 									<input class="textbox-other" type="password" name="pass"><br><br>
@@ -609,6 +656,7 @@ void BlogSystem::add_controls_view(std::shared_ptr<HttpServer::Request> request,
 									<h1>Title:</h1>
 								
 									<input class="textbox-other" type="text" name="title">
+
 									<h1>Content:</h1>
 								
 									<textarea class="textbox-other" rows="10" name="content" style="resize:vertical;" cols="60"></textarea><br><br>
@@ -621,6 +669,9 @@ void BlogSystem::add_controls_view(std::shared_ptr<HttpServer::Request> request,
 									<h1>Username:</h1>
 									<input class="textbox-other" type="text" name="user" value=")V0G0N" << sessions[get_session_cookie(request)] << R"V0G0N(">
 								
+									<h1>Nickname:</h1>
+									<input class="textbox-other" type="text" name="nick" value=")V0G0N" << get_user_info(sessions[get_session_cookie(request)], anticodons::nickname) << R"V0G0N("><br><br>
+
 									<h1>Password:</h1>
 								
 									<input class="textbox-other" type="password" name="pass"><br><br>
@@ -631,8 +682,10 @@ void BlogSystem::add_controls_view(std::shared_ptr<HttpServer::Request> request,
 							<div id="tab-edit" class="settings-tab-content">
 								<form id="edit-post" action="/edit" method="post">
 									<input type="hidden" name="post_id" value=")V0G0N" << get_post_information_by_id(post_id, codons::id) << R"V0G0N(" />
+									
 									<h1>Title:</h1>
 									<input class="textbox-other" type="text" name="title" value=")V0G0N" << get_post_information_by_id(post_id, codons::title) << R"V0G0N("><br><br>
+
 									<h1>Content:</h1>
 									<textarea class="textbox-other" rows="10" name="content" cols="60">)V0G0N" << get_post_information_by_id(post_id, codons::content) << R"V0G0N(</textarea>
 
@@ -655,6 +708,8 @@ void BlogSystem::add_controls_view(std::shared_ptr<HttpServer::Request> request,
 				</div>
 			</div>
 		)V0G0N";
+
+
 	}
 
 }
@@ -730,7 +785,9 @@ std::stringstream BlogSystem::get_this_post(std::shared_ptr<HttpServer::Request>
 				)V0G0N";
 		};
 
+		
 		cache[post_id] = compress(ss.str());
+		
 		add_controls_view(request, ss, post_id);
 
 	}
@@ -754,7 +811,8 @@ std::stringstream BlogSystem::find_post(std::shared_ptr<HttpServer::Request> req
 
 		sqlite::database db(this->filename);
 	
-		db << "select id,title,content,postdate,author from posts where title LIKE ? OR content LIKE ? OR postdate LIKE ? ;"
+		db << "select id,title,content,postdate,author from posts where title LIKE ? OR content LIKE ? OR postdate LIKE ? OR author LIKE ? ;"
+			<< "%" + value + "%"
 			<< "%" + value + "%"
 			<< "%" + value + "%"
 			<< "%" + value + "%"
@@ -832,15 +890,20 @@ int BlogSystem::create_post(std::string title, std::string content, std::string 
 			<< (now->tm_year + 1900)
 			<< std::endl;
 
-		db << "insert into posts (title, content, postdate, author) values (?,?,?,?);"
-			<< title
-			<< content
-			<< stime.str()
-			<< author;
+		db << "select nickname from users where username=? ;"
+				<< author
+				>> [&](std::string nickname)
+			{
+				db << "insert into posts (title, content, postdate, author) values (?,?,?,?);"
+				<< title
+				<< content
+				<< stime.str()
+				<< nickname;
 
-		cache.clear();
+				cache.clear();
 
-		std::cout << "[ User " << author << " created post " << "'" << title << "'" << "... ]" << std::endl;
+				std::cout << "[ User " << author << " (" << nickname << ") created post " << "'" << title << "'" << "... ]" << std::endl;
+			};
 
 		return 1;
 	}
@@ -877,11 +940,10 @@ int BlogSystem::update_post(std::string post_id, std::string title, std::string 
 
 		if (count == 1)
 		{
-			db << "update posts set title=?, content=?, postdate=?, author=? WHERE id=? ;"
+			db << "update posts set title=?, content=?, postdate=? WHERE id=? ;"
 				<< title
 				<< content
 				<< stime.str()
-				<< author
 				<< post_id;
 
 			cache.clear();
@@ -988,7 +1050,7 @@ int BlogSystem::hash_password(char *dst, const char *passphrase, uint32_t N, uin
 	return 1;
 }
 
-int BlogSystem::change_user_details(std::string user_input, std::string pwd_input, std::shared_ptr<HttpServer::Request> request)
+int BlogSystem::change_user_details(std::string user_input, std::string pwd_input, std::string nickname, std::shared_ptr<HttpServer::Request> request)
 {
 	if (user_input.length() == 0 || pwd_input.length() == 0)
 		return 0;
@@ -997,7 +1059,17 @@ int BlogSystem::change_user_details(std::string user_input, std::string pwd_inpu
 		sqlite::database db(this->filename);
 
 		int count = 0;
+
 		const auto original_username = sessions[get_session_cookie(request)];
+
+		if (user_input != original_username) {
+			db << "select count(*) from users where username=? ;"
+				<< user_input
+				>> count;
+			
+			if (count != 0)
+				return 0;
+		}
 
 		db << "select count(*) from users where username=? ;"
 			<< original_username
@@ -1010,9 +1082,10 @@ int BlogSystem::change_user_details(std::string user_input, std::string pwd_inpu
 			
 			hash_password(final_password, passphrase, SCRYPT_N, SCRYPT_r, SCRYPT_p);
 
-			db << "update users set username=?, pass=? where username=? ;"
+			db << "update users set username=?, pass=?, nickname=? where username=? ;"
 				<< user_input
 				<< final_password
+				<< nickname
 				<< original_username;
 
 			std::cout << "[ User " << original_username << " (" << user_input << ") has updated details... ]" << std::endl;

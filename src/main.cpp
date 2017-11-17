@@ -17,8 +17,7 @@ namespace BlogPages {
 	HttpServer * server;
 	BlogSystem * blog;
 
-	inline void default_resource_send(const HttpServer* server, const std::shared_ptr<HttpServer::Response> &response, const std::shared_ptr<std::ifstream> &ifs) {
-		int KB128 = 131072;
+	inline void default_resource_send(const HttpServer* server, const std::shared_ptr<HttpServer::Response> &response, const std::shared_ptr<std::ifstream> &ifs) {		int KB128 = 131072;
 		std::vector<char> buffer(KB128);
 		std::streamsize read_length;
 		if ((read_length = ifs->read(&buffer[0], buffer.size()).gcount()) > 0) {
@@ -230,6 +229,8 @@ int main(int argc, char* argv[])
 {
 #ifdef _WIN32
 	system("cls");
+#else
+	system("clear");
 #endif
 
 	std::cout << "[ vldr web app - " << __DATE__ << " ]" << std::endl;
