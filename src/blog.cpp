@@ -87,6 +87,7 @@ void BlogSystem::loggout(std::string username) {
 		if (item.second == username) {
 			std::cout << "[ User " << item.second << " logging out (" << item.first << ")... ]" << std::endl;
 			sessions.erase(item.first);
+			return;
 		}
 	}
 }
