@@ -193,7 +193,7 @@ void BlogSystem::process_login_get(std::shared_ptr<HttpServer::Request> request,
 			</html>
 			)V0G0N";
 
-	send_page(request, response, jj.str());
+	send_page_encoded(request, response, compress(jj.str()));
 }
 
 std::map<std::string, std::string> BlogSystem::get_post_data(std::shared_ptr<HttpServer::Request> request) {
@@ -337,24 +337,18 @@ void BlogSystem::process_change_post(std::shared_ptr<HttpServer::Request> reques
 
 	PostData pd = get_post_data(request);
 
-	std::string newPassword = uri_decode(pd["pass"]);
-	std::string newUsername = uri_decode(pd["user"]);
-	std::string newNickname = uri_decode(pd["nick"]);
+	std::string password = uri_decode(pd["pass"]);
+	std::string username = uri_decode(pd["user"]);
+	std::string nickname = uri_decode(pd["nick"]);
 
 	if (!is_logged_in(request)) {
 		send_page(request, response, "You must be logged in to perform this action...");
 		return;
 	}
-	 
-	if (newPassword.empty() || newUsername.empty()) {
-		send_page(request, response, "Username or password cannot be empty...");
-		return;
-	}
 
-	if (change_user_details(newUsername, newPassword, newNickname, request))
-		send_page(request, response, "1");
-	else
-		send_page(request, response, "0");
+	std::string reply = "We were unable to get a response...";
+	change_user_details(username, password, nickname, reply, request);
+	send_page(request, response, reply);
 }
 
 void BlogSystem::process_edit_post(std::shared_ptr<HttpServer::Request> request, std::shared_ptr<HttpServer::Response> response)
@@ -553,7 +547,7 @@ std::string BlogSystem::get_user_info(std::string username, int info)
 			db << "select nickname from users where username=? ;" << username >> [&](std::string content) { ss << content; };
 			break;
 		case anticodons::password:
-			db << "select pass from posts where username=? ;" << username >> [&](std::string content) { ss << content; };
+			db << "select pass from users where username=? ;" << username >> [&](std::string content) { ss << content; };
 			break;
 		default:
 			ss << "unknown anticodon";
@@ -1049,58 +1043,84 @@ int BlogSystem::hash_password(char *dst, const char *passphrase, uint32_t N, uin
 
 	return 1;
 }
-
-int BlogSystem::change_user_details(std::string user_input, std::string pwd_input, std::string nickname, std::shared_ptr<HttpServer::Request> request)
+ 
+void BlogSystem::change_user_details(std::string username, 
+	std::string password,  
+	std::string nickname, 
+	std::string& response, 
+	std::shared_ptr<HttpServer::Request> request)
 {
-	if (user_input.length() == 0 || pwd_input.length() == 0)
-		return 0;
+	if (username.length() == 0) 
+	{
+		response = "You must have the username field filled out...";
+		return;
+	}
 
 	try {
+		// Open the database...
 		sqlite::database db(this->filename);
 
-		int count = 0;
-
+		// Create a const of our original username.
 		const auto original_username = sessions[get_session_cookie(request)];
 
-		if (user_input != original_username) {
+		// Check if the username is available.
+		if (username != original_username) {
+			int count = 0;
+
 			db << "select count(*) from users where username=? ;"
-				<< user_input
+				<< username
 				>> count;
 			
-			if (count != 0)
-				return 0;
+			if (count != 0) {
+				response = "Username has already been taken!";
+				return;
+			}
 		}
 
-		db << "select count(*) from users where username=? ;"
-			<< original_username
-			>> count;
+		// Init the query...
+		auto ps = db << "update users set username=?, pass=?, nickname=? where username=? ;";
 
-		if (count == 1)
+		// Bind username...
+		ps << username;
+
+		// Check if the password input is empty and bind values to it.
+		if (password.length() == 0) 
 		{
-			char final_password[1024];
-			const auto passphrase = pwd_input.c_str();
-			
-			hash_password(final_password, passphrase, SCRYPT_N, SCRYPT_r, SCRYPT_p);
+			ps << get_user_info(original_username, anticodons::password);
+		}
+		else {
+			char hashed_password[1024];
+			const auto passphrase = password.c_str();
+			hash_password(hashed_password, passphrase, SCRYPT_N, SCRYPT_r, SCRYPT_p);
 
-			db << "update users set username=?, pass=?, nickname=? where username=? ;"
-				<< user_input
-				<< final_password
-				<< nickname
-				<< original_username;
-
-			std::cout << "[ User " << original_username << " (" << user_input << ") has updated details... ]" << std::endl;
-
-			return 1;
+			ps << hashed_password;
 		}
 
-		return 0;
+		// Check if the nickname field is empty and bind values to it.
+		ps << nickname;
+		
+		// Place the original username.
+		ps << original_username;
+
+		// Execute the query...
+		ps.execute();
+
+		// Perform some logging...
+		std::cout << "[ User " << original_username << " has updated details... ]" << std::endl;
+
+		// Set a response...
+		response = "Successfully updated user details...";
+
+		// Return...
+		return;
 	}
 	catch (std::exception &e) {
 		std::cout << "# ERR: SQLException in " << __FILE__;
 		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << std::endl;
 		std::cout << "# ERR: " << e.what() << std::endl;
 
-		return 0;
+		response = "The server encountered an error!";
+		return;
 	}
 }
 

@@ -95,7 +95,11 @@ public:
 	int delete_post(std::string post_id); 
 
 	int hash_password(char * dst, const char * passphrase, uint32_t N, uint8_t r, uint8_t p);
-	int change_user_details(std::string user_input, std::string pwd_input, std::string nickname, std::shared_ptr<HttpServer::Request> request);
+	void change_user_details(std::string username, 
+		std::string password, 
+		std::string nickname, 
+		std::string & response,
+		std::shared_ptr<HttpServer::Request> request);
 	int process_login(std::string user, std::string pwd);
 
 	int get_user_id(std::string user_input);
