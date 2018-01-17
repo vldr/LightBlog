@@ -31,12 +31,24 @@
 
 typedef HTTPExServer::Server<HTTPExServer::HTTP> HttpServer; 
 
+namespace BlogResponses {
+	const std::string server_error = "{server_error}";
+	const std::string notfound = "{notfound}";
+	const std::string noposts = "{noposts}";
+	const std::string nologin = "{nologin}";
+	const std::string success = "{success}";
+	const std::string fields_error = "{fields_error}";
+	const std::string username_taken_error = "{username_taken_error}";
+	const std::string title_taken_error = "{title_taken_error}";
+}
+
 class BlogSystem
 {
 public: 
 	enum codons : int
 	{
 		id,
+		postid,
 		title,
 		content,
 		author,
@@ -64,6 +76,7 @@ public:
 
 	void send_page(std::shared_ptr<HttpServer::Request> request, std::shared_ptr<HttpServer::Response> response, std::string ss);
 	void send_page_encoded(std::shared_ptr<HttpServer::Request> request, std::shared_ptr<HttpServer::Response> response, std::string ss);
+	void send_page_pre_encoded(std::shared_ptr<HttpServer::Request> request, std::shared_ptr<HttpServer::Response> response, std::string ss);
 	void send_page404(std::shared_ptr<HttpServer::Request> request, std::shared_ptr<HttpServer::Response> response, std::string ss);
 
 	void process_logout_get(std::shared_ptr<HttpServer::Request> request, std::shared_ptr<HttpServer::Response> response);
@@ -90,9 +103,9 @@ public:
 	std::stringstream find_post(std::shared_ptr<HttpServer::Request> request, std::string searchparam);
 
 	std::string get_session_cookie(std::shared_ptr<HttpServer::Request> request);
-	int create_post(std::string title, std::string content, std::string author);
-	int update_post(std::string post_id, std::string title, std::string content, std::string author);
-	int delete_post(std::string post_id); 
+	void create_post(std::string title, std::string content, std::string author, std::string & reply);
+	void update_post(std::string post_id, std::string title, std::string content, std::string author, std::string & reply);
+	void delete_post(std::string post_id, std::string & reply); 
 
 	int hash_password(char * dst, const char * passphrase, uint32_t N, uint8_t r, uint8_t p);
 	void change_user_details(std::string username, 
@@ -105,7 +118,41 @@ public:
 	int get_user_id(std::string user_input);
 
 	std::stringstream parse_blob(std::istream* blob);
-	 
+	   
+	inline std::string title_encode(const std::string &value) {
+		std::stringstream escaped;
+		escaped.fill('0');
+		escaped << std::hex;
+
+		for (std::string::const_iterator i = value.begin(), n = value.end(); i != n; ++i) {
+			std::string::value_type c = (*i);
+
+			if (c == '%' || c == '.' || c == '_' || c == '<' || c == '>' || c == '"' || c == '~')
+			{
+				continue;
+			}  
+
+			if (c == ' ')
+			{
+				escaped << '-';
+				continue;
+			}
+
+			if (isalnum(c) || c == '-')
+			{
+				escaped << c;
+				continue;
+			}
+
+			escaped << std::uppercase;
+			escaped << '%' << std::setw(2) << int((unsigned char)c);
+			escaped << std::nouppercase;
+		}
+
+		boost::algorithm::to_lower(escaped.str());
+		return escaped.str();
+	};
+
 	inline std::string uri_decode(const std::string& in)
 	{
 		std::string out = ""; 
@@ -150,7 +197,7 @@ public:
 
 	const std::string CACHEHOME = "home";
 	const std::string REGEXNUMBER = "([0-9]{1,9})";
-	const std::string REGEXSEARCH = "([a-z,A-Z,0-9,%,-,_,.,!,~,*,',(,)]+)";
+	const std::string REGEXSEARCH = "([a-z,A-Z,0-9,\\_,\\%,\\-,\\+]+)";
 	const int SESSIONEXPIRETIME = 1800;
 
 	std::map<std::string, std::string> cache;

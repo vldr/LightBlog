@@ -4,9 +4,9 @@
 
 #include <sstream>
 #include <iterator>
-#include <string>
+#include <string> 
 #include <ctime>
- 
+
 #ifdef _WIN32
 #include <Wincrypt.h>
 #pragma comment(lib, "advapi32.lib")
@@ -15,6 +15,8 @@
 BlogSystem::BlogSystem(std::string filename)
 {
 	try {
+		std::cout << sqlite3_threadsafe();
+
 		this->filename = filename;
 		sqlite::database db(filename);
 
@@ -28,7 +30,8 @@ BlogSystem::BlogSystem(std::string filename)
 		db << "create table if not exists posts ("
 			"   id integer primary key autoincrement not null,"
 			"   title text,"
-			"   content BLOB,"
+			"   content BLOB," 
+			"   postid text UNIQUE,"
 			"   postdate text,"
 			"   author text"
 			");";
@@ -114,6 +117,12 @@ void BlogSystem::send_page_encoded(std::shared_ptr<HttpServer::Request> request,
 	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << ss.length() << "\r\nContent-Encoding: gzip\r\nContent-Type: text/html; charset=utf-8" << "\r\n\r\n" << ss;
 }
 
+void BlogSystem::send_page_pre_encoded(std::shared_ptr<HttpServer::Request> request, std::shared_ptr<HttpServer::Response> response, std::string ss)
+{
+	std::string ss_compressed(compress(ss));
+	*response << "HTTP/1.1 200 OK\r\nContent-Length: " << ss_compressed.length() << "\r\nContent-Encoding: gzip\r\nContent-Type: text/html; charset=utf-8" << "\r\n\r\n" << ss_compressed;
+}
+
 void BlogSystem::send_page404(std::shared_ptr<HttpServer::Request> request, std::shared_ptr<HttpServer::Response> response, std::string ss)
 {
 	
@@ -130,7 +139,7 @@ void BlogSystem::process_logout_get(std::shared_ptr<HttpServer::Request> request
 		return;
 	}
 
-	send_page(request, response, "You must be logged in to perform this action...");
+	send_page(request, response, BlogResponses::nologin);
 }
 
 void BlogSystem::process_login_get(std::shared_ptr<HttpServer::Request> request, std::shared_ptr<HttpServer::Response> response)
@@ -193,7 +202,7 @@ void BlogSystem::process_login_get(std::shared_ptr<HttpServer::Request> request,
 			</html>
 			)V0G0N";
 
-	send_page_encoded(request, response, compress(jj.str()));
+	send_page_encoded( request, response, compress(jj.str()) );
 }
 
 std::map<std::string, std::string> BlogSystem::get_post_data(std::shared_ptr<HttpServer::Request> request) {
@@ -217,7 +226,7 @@ std::map<std::string, std::string> BlogSystem::get_post_data(std::shared_ptr<Htt
 
 	return map;
 }
-
+ 
 std::string BlogSystem::generate_salt(int length) {
 #ifdef _WIN32
 	HCRYPTPROV hProvider = 0;
@@ -226,7 +235,7 @@ std::string BlogSystem::generate_salt(int length) {
 	{
 		std::cerr << "[ Error at CryptAcquireContextW... ]" << std::endl;
 		return "";
-	}
+	} 
 
 	const DWORD dwLength = 8;
 	BYTE pbBuffer[dwLength] = {};
@@ -238,8 +247,7 @@ std::string BlogSystem::generate_salt(int length) {
 		return "";
 	}
 
-	uint32_t random_value;
-	memcpy(&random_value, pbBuffer, dwLength);
+	uint32_t random_value = (uint32_t)pbBuffer;
 
 	if (!::CryptReleaseContext(hProvider, 0)) {
 		std::cerr << "[ Error at CryptReleaseContext... ]" << std::endl;
@@ -320,14 +328,13 @@ void BlogSystem::process_post_post(std::shared_ptr<HttpServer::Request> request,
 	std::string con = uri_decode(pd["content"]);
 
 	if (!is_logged_in(request)) {
-		send_page(request, response, "You must be logged in to perform this action...");
+		send_page_pre_encoded(request, response, BlogResponses::nologin);
 		return;
 	}
 
-	if (create_post(title, con, sessions[get_session_cookie(request)]))
-		send_page(request, response, "1");
-	else
-		send_page(request, response, "0");
+	std::string reply = "We were unable to get a response...";
+	create_post(title, con, sessions[get_session_cookie(request)], reply);
+	send_page_pre_encoded(request, response, reply);
 }
 
 
@@ -342,13 +349,13 @@ void BlogSystem::process_change_post(std::shared_ptr<HttpServer::Request> reques
 	std::string nickname = uri_decode(pd["nick"]);
 
 	if (!is_logged_in(request)) {
-		send_page(request, response, "You must be logged in to perform this action...");
-		return;
+		send_page_pre_encoded(request, response, BlogResponses::nologin);
+		return; 
 	}
 
 	std::string reply = "We were unable to get a response...";
 	change_user_details(username, password, nickname, reply, request);
-	send_page(request, response, reply);
+	send_page_pre_encoded(request, response, reply);
 }
 
 void BlogSystem::process_edit_post(std::shared_ptr<HttpServer::Request> request, std::shared_ptr<HttpServer::Response> response)
@@ -362,18 +369,16 @@ void BlogSystem::process_edit_post(std::shared_ptr<HttpServer::Request> request,
 	std::string post_id = pd["post_id"]; 
 
 	if (!is_logged_in(request)) {
-		send_page(request, response, "You must be logged in to perform this action...");
+		send_page_pre_encoded(request, response, BlogResponses::nologin);
 		return;
 	}
 	
 	auto val = sessions[get_session_cookie(request)];
 
-	if (update_post(post_id, title, con, sessions[get_session_cookie(request)]))
-		send_page(request, response, "1");
-	else
-		send_page(request, response, "0");
+	std::string reply = "We were unable to get a response...";
+	update_post(post_id, title, con, sessions[get_session_cookie(request)], reply);
+	send_page_pre_encoded(request, response, reply);
 } 
-
 
 void BlogSystem::process_delete_post(std::shared_ptr<HttpServer::Request> request, std::shared_ptr<HttpServer::Response> response)
 {
@@ -382,16 +387,15 @@ void BlogSystem::process_delete_post(std::shared_ptr<HttpServer::Request> reques
 	PostData pd = get_post_data(request);
 
 	std::string post_id = pd["post_id"];
-
+	 
 	if (!is_logged_in(request)) {
-		send_page(request, response, "You must be logged in to perform this action...");
+		send_page(request, response, BlogResponses::nologin);
 		return;
 	}
 
-	if (delete_post(post_id))
-		send_page(request, response, "1");
-	else
-		send_page(request, response, "0");
+	std::string reply = "We were unable to get a response...";
+	delete_post(post_id, reply);
+	send_page(request, response, reply);
 }
  
 std::stringstream BlogSystem::parse_blob(std::istream* blob) {
@@ -419,15 +423,14 @@ std::stringstream BlogSystem::get_posts(std::shared_ptr<HttpServer::Request> req
 
 		if (count <= 0) { 
 			add_controls_general(request, ss);
-			ss << "<br><br><center>No posts...<center>";
 			cache.erase(CACHEHOME + std::to_string(page));
 			
 			return ss;
 		}
 
-		db << "select id,title,content,postdate,author from posts ORDER by id DESC LIMIT 10 OFFSET ? ;"
+		db << "select postid,title,content,postdate,author from posts ORDER by id DESC LIMIT 10 OFFSET ? ;"
 			<< (page * 10)
-			>> [&](int id, std::string title, std::string content, std::string postdate, std::string author)
+			>> [&](std::string id, std::string title, std::string content, std::string postdate, std::string author)
 		{
 			std::stringstream s(content);
 
@@ -435,10 +438,10 @@ std::stringstream BlogSystem::get_posts(std::shared_ptr<HttpServer::Request> req
 			bbparser.source_stream(s); 
 			bbparser.parse();
 
-			ss << R"V0G0N(
+			ss << R"V0G0N( 
 					<div class="postBox">
 						<div class="postHeader">
-							<a class="postTitle" href="view/)V0G0N" << id << "\">" << title << R"V0G0N(</a>
+							<a class="postTitle" href="/)V0G0N" << id << "\">" << title << R"V0G0N(</a>
 							<span class="postDate">)V0G0N" << postdate << R"V0G0N(</span>
 						</div>
 						<div class="postContent"><p>)V0G0N" << truncate(bbparser.content(), 2024, true) << R"V0G0N(</p></div>
@@ -453,12 +456,12 @@ std::stringstream BlogSystem::get_posts(std::shared_ptr<HttpServer::Request> req
 
 		if (count > 10) {
 			if ((count - (page * 10)) == count)
-				ss << "<a href=\"/" << (page + 1) << "\"><div class=\"nextButton\">Next</div></a>";
+				ss << "<a href=\"/index/" << (page + 1) << "\"><div class=\"nextButton\">Next</div></a>";
 			else if ((count - (page * 10)) > 10)
-				ss << "<a href=\"/" << (page - 1) << "\"><div class=\"backButton\">Back</div></a>"
-				<< "<a href=\"/" << (page + 1) << "\"><div class=\"nextButton\">Next</div></a>";
+				ss << "<a href=\"/index/" << (page - 1) << "\"><div class=\"backButton\">Back</div></a>"
+				<< "<a href=\"/index/" << (page + 1) << "\"><div class=\"nextButton\">Next</div></a>";
 			else
-				ss << "<a href=\"/" << (page - 1) << "\"><div class=\"backButton\">Back</div></a>";
+				ss << "<a href=\"/index/" << (page - 1) << "\"><div class=\"backButton\">Back</div></a>";
 		}
 
 		cache[CACHEHOME + std::to_string(page)] = compress(ss.str());
@@ -470,7 +473,7 @@ std::stringstream BlogSystem::get_posts(std::shared_ptr<HttpServer::Request> req
 		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << std::endl;
 		std::cout << "# ERR: " << e.what() << std::endl;
 
-		ss << "database server failure";
+		ss << BlogResponses::server_error;
 	}
 
 	return ss;
@@ -494,6 +497,9 @@ std::string BlogSystem::get_post_information_by_id(std::string post_id, int info
 		{
 		case codons::id:
 			db << "select id from posts where id=? ;" << post_id >> [&](std::string content) { ss << content; };
+			break;
+		case codons::postid:
+			db << "select postid from posts where id=? ;" << post_id >> [&](std::string content) { ss << content; };
 			break;
 		case codons::title:
 			db << "select title from posts where id=? ;" << post_id >> [&](std::string content) { ss << content; };
@@ -702,10 +708,7 @@ void BlogSystem::add_controls_view(std::shared_ptr<HttpServer::Request> request,
 				</div>
 			</div>
 		)V0G0N";
-
-
 	}
-
 }
 
 std::string BlogSystem::compress(const std::string& data)
@@ -741,48 +744,49 @@ std::stringstream BlogSystem::get_this_post(std::shared_ptr<HttpServer::Request>
 		sqlite::database db(this->filename);
 
 		int count = 0;
-		db << "select count(*) from posts where id=?;"
+		db << "select count(*) from posts where postid=? ;"
 		<< post_id
 		>> count;
 
 		if (count != 1) {
 			add_controls_general(request, ss);
 
-			ss << "<br><br><center> Post was not found or duplicate posts... </center>";
+			ss << BlogResponses::notfound;
 
 			cache.erase(post_id);
 
 			return ss;
-		}
+		} 
 
-		db << "select id,title,content,postdate,author from posts where id=? ;"
+		std::string numerical_post_id = "0";
+
+		db << "select id,title,content,postdate,author from posts where postid=? ;"
 			<< post_id
-			>> [&](int id, std::string title, std::string content, std::string postdate, std::string author)
+			>> [&](std::string id, std::string title, std::string content, std::string postdate, std::string author)
 		{
 			std::stringstream s(content);
+
+			numerical_post_id = id;
 
 			bbcode::parser bbparser;
 			bbparser.source_stream(s);
 			bbparser.parse();
 
 			ss << R"V0G0N(
-					<div class="postBox">
-						<div class="postHeader">
-							<span class="postTitleOnPage">)V0G0N" << title << R"V0G0N(</span>
-							<span class="postDate">)V0G0N" << postdate << R"V0G0N(</span>
-						</div>
-						<div class="postContent"><p>)V0G0N" << bbparser.content() << R"V0G0N(</p></div>
-						<div class="postFooter">
-							<span class="postAuthor">)V0G0N" << author << R"V0G0N(</span>
-						</div>
+					<div class="postHeader">
+						<span class="postTitleOnPage">)V0G0N" << title << R"V0G0N(</span>
+						<span class="postDate">)V0G0N" << postdate << R"V0G0N(</span>
 					</div>
-				)V0G0N";
+					<div class="postContent"><p>)V0G0N" << bbparser.content() << R"V0G0N(</p></div>
+					<div class="postFooter">
+						<span class="postAuthor">)V0G0N" << author << R"V0G0N(</span>
+					</div>
+				)V0G0N"; 
 		};
 
-		
 		cache[post_id] = compress(ss.str());
 		
-		add_controls_view(request, ss, post_id);
+		add_controls_view(request, ss, numerical_post_id);
 
 	}
 	catch (std::exception &e) {
@@ -805,23 +809,23 @@ std::stringstream BlogSystem::find_post(std::shared_ptr<HttpServer::Request> req
 
 		sqlite::database db(this->filename);
 	
-		db << "select id,title,content,postdate,author from posts where title LIKE ? OR content LIKE ? OR postdate LIKE ? OR author LIKE ? ;"
+		db << "select postid,title,content,postdate,author from posts where title LIKE ? OR content LIKE ? OR postdate LIKE ? OR author LIKE ? ;"
 			<< "%" + value + "%"
 			<< "%" + value + "%"
 			<< "%" + value + "%"
 			<< "%" + value + "%"
-			>> [&](int id, std::string title, std::string content, std::string postdate, std::string author)
+			>> [&](std::string id, std::string title, std::string content, std::string postdate, std::string author)
 		{
 			std::stringstream s(content);
 
 			bbcode::parser bbparser;
 			bbparser.source_stream(s);
 			bbparser.parse();
-
+			 
 			ss << R"V0G0N(
 					<div class="postBox">
 						<div class="postHeader">
-							<a class="postTitle" href="view/)V0G0N" << id << "\">" << title << R"V0G0N(</a>
+							<a class="postTitle" href="/)V0G0N" << id << "\">" << title << R"V0G0N(</a>
 							<span class="postDate">)V0G0N" << postdate << R"V0G0N(</span>
 						</div>
 						<div class="postContent"><p>)V0G0N" << truncate(bbparser.content(), 2024, true) << R"V0G0N(</p></div>
@@ -847,6 +851,7 @@ std::stringstream BlogSystem::find_post(std::shared_ptr<HttpServer::Request> req
 
 std::string BlogSystem::get_session_cookie(std::shared_ptr<HttpServer::Request> request)
 {
+	// Hardcoded to hell...
 	for (auto& header : request->header) {
 		if (header.first == "Cookie") {
 			if (header.second.find("vldr_session=") != std::string::npos) {
@@ -866,15 +871,29 @@ std::string BlogSystem::get_session_cookie(std::shared_ptr<HttpServer::Request> 
 	return "";
 }
 
-int BlogSystem::create_post(std::string title, std::string content, std::string author)
+void BlogSystem::create_post(std::string title, std::string content, std::string author, std::string & reply)
 {
 	std::stringstream ss;
 
-	if (title.empty() || content.empty())
-		return 0;
+	if (title.empty() || content.empty()) {
+		reply = BlogResponses::fields_error;
+		return;
+	}
 
 	try {
 		sqlite::database db(this->filename);
+
+		std::string postid = title_encode(title);
+
+		int count = 0;
+		db << "select count(*) from posts where postid=? ;"
+			<< postid
+			>> count;
+
+		if (count != 0) {
+			reply = BlogResponses::title_taken_error;
+			return;
+		}
 
 		std::time_t t = time(0);
 		struct tm * now = localtime(&t);
@@ -888,32 +907,36 @@ int BlogSystem::create_post(std::string title, std::string content, std::string 
 				<< author
 				>> [&](std::string nickname)
 			{
-				db << "insert into posts (title, content, postdate, author) values (?,?,?,?);"
+				db << "insert into posts (title, content, postdate, author, postid) values (?,?,?,?,?);"
 				<< title
 				<< content
 				<< stime.str()
-				<< nickname;
+				<< nickname
+				<< postid;
 
 				cache.clear();
-
 				std::cout << "[ User " << author << " (" << nickname << ") created post " << "'" << title << "'" << "... ]" << std::endl;
 			};
 
-		return 1;
+		reply = BlogResponses::success;
+		return;
 	}
 	catch (std::exception &e) {
 		std::cout << "# ERR: SQLException in " << __FILE__;
 		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << std::endl;
 		std::cout << "# ERR: " << e.what() << std::endl;
 
-		return 0;
+		reply = BlogResponses::server_error;
+		return;
 	}
 }
 
-int BlogSystem::update_post(std::string post_id, std::string title, std::string content, std::string author)
+void BlogSystem::update_post(std::string post_id, std::string title, std::string content, std::string author, std::string & reply)
 {
-	if (title.empty() || content.empty())
-		return 0;
+	if (title.empty() || content.empty()) {
+		reply = BlogResponses::fields_error;
+		return;
+	}
 
 	try {
 		sqlite::database db(this->filename);
@@ -934,31 +957,46 @@ int BlogSystem::update_post(std::string post_id, std::string title, std::string 
 
 		if (count == 1)
 		{
-			db << "update posts set title=?, content=?, postdate=? WHERE id=? ;"
+			std::string encoded_postid = title_encode(title);
+
+			db << "select count(*) from posts where postid=? ;"
+				<< encoded_postid
+				>> count;
+
+			if (count != 0) {
+				reply = BlogResponses::title_taken_error;
+				return;
+			}
+
+			db << "update posts set title=?, content=?, postdate=?, postid=? WHERE id=? ;"
 				<< title
 				<< content
 				<< stime.str()
+				<< encoded_postid
 				<< post_id;
 
 			cache.clear();
 
 			std::cout << "[ User " << author << " updated post " << "'" << title << "'" << "... ]" << std::endl;
-
-			return 1;
+			
+			reply = BlogResponses::success;
+			return;
 		}
 
-		return 0;
+		reply = BlogResponses::notfound;
+		return;
 	}
 	catch (std::exception &e) {
 		std::cout << "# ERR: SQLException in " << __FILE__;
 		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << std::endl;
 		std::cout << "# ERR: " << e.what() << std::endl;
 
-		return 0;
+		reply = BlogResponses::server_error;
+		return;
 	}
-}
+}  
 
-int BlogSystem::delete_post(std::string post_id)
+void BlogSystem::delete_post(std::string post_id, std::string & reply)
 { 
 	try {
 		sqlite::database db(this->filename);
@@ -978,22 +1016,22 @@ int BlogSystem::delete_post(std::string post_id)
 
 			std::cout << "[ Post "<< post_id << " has been deleted... ]" << std::endl;
 
-			return 1;
+			reply = BlogResponses::success;
+			return;
 		}
 
-
-
-		return 0;
+		reply = BlogResponses::notfound;
+		return;
 	}
 	catch (std::exception &e) {
 		std::cout << "# ERR: SQLException in " << __FILE__;
 		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << std::endl;
 		std::cout << "# ERR: " << e.what() << std::endl;
 
-		return 0;
+		reply = BlogResponses::server_error;
+		return;
 	}
 }
-
 
 int BlogSystem::hash_password(char *dst, const char *passphrase, uint32_t N, uint8_t r, uint8_t p) {
 	uint8_t salt[SCRYPT_SALT_LEN] = {};
@@ -1047,12 +1085,12 @@ int BlogSystem::hash_password(char *dst, const char *passphrase, uint32_t N, uin
 void BlogSystem::change_user_details(std::string username, 
 	std::string password,  
 	std::string nickname, 
-	std::string& response, 
+	std::string& reply, 
 	std::shared_ptr<HttpServer::Request> request)
 {
 	if (username.length() == 0) 
 	{
-		response = "You must have the username field filled out...";
+		reply = BlogResponses::fields_error;
 		return;
 	}
 
@@ -1072,7 +1110,7 @@ void BlogSystem::change_user_details(std::string username,
 				>> count;
 			
 			if (count != 0) {
-				response = "Username has already been taken!";
+				reply = BlogResponses::username_taken_error;
 				return;
 			}
 		}
@@ -1109,7 +1147,7 @@ void BlogSystem::change_user_details(std::string username,
 		std::cout << "[ User " << original_username << " has updated details... ]" << std::endl;
 
 		// Set a response...
-		response = "Successfully updated user details...";
+		reply = BlogResponses::success;
 
 		// Return...
 		return;
@@ -1119,7 +1157,7 @@ void BlogSystem::change_user_details(std::string username,
 		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << std::endl;
 		std::cout << "# ERR: " << e.what() << std::endl;
 
-		response = "The server encountered an error!";
+		reply = BlogResponses::server_error;
 		return;
 	}
 }
@@ -1157,7 +1195,7 @@ int BlogSystem::process_login(std::string user_input, std::string pwd_input)
 		}
 
 		return result;
-	}
+	} 
 	catch (std::exception &e) {
 		std::cout << "# ERR: SQLException in " << __FILE__;
 		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << std::endl;
